@@ -1,4 +1,4 @@
-﻿# Data Dictionary
+# Data Dictionary
 
 Definitions of entities and fields.
 
