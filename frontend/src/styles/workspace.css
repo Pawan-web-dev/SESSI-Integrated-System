@@ -1,0 +1,25 @@
+/* Registration wizard + employer dashboard. Copied from the design; scoped to .workspace */
+.workspace .hd{background:url(../assets/images/essi-header.jpg) 0 0/100% 100% no-repeat}
+.workspace{margin:0;font-family:Inter,Arial,sans-serif;color:#17321f}
+.workspace button{font-family:inherit;cursor:pointer}
+.workspace .mb{display:none}
+.workspace .bd{display:none}
+@media (max-width:900px){.workspace .sb{position:fixed!important;top:0;left:0;bottom:0;z-index:50;overflow-y:auto;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 12px rgba(0,0,0,.25)}
+.workspace .sb.open{transform:none}
+.workspace .bd.on{display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:40}
+.workspace .mb{display:inline-flex}
+.workspace .mn{padding:14px!important}
+.workspace .hd{aspect-ratio:auto!important;height:92px;background:linear-gradient(90deg,#067a35,#2fae5f)!important}
+.workspace .hl{left:10px!important;top:10px!important;height:72px!important;background:#fff;border-radius:50%;padding:5px;box-sizing:border-box}
+.workspace .hv,.workspace .hn{display:none!important}
+.workspace .ht{left:96px!important;top:16px!important;font-size:16px!important;color:#fff!important;max-width:calc(100% - 210px)}
+.workspace .hr{top:8px!important;height:auto!important}
+}
+@media (max-width:560px){.workspace .ht{font-size:13px!important;left:88px!important;max-width:calc(100% - 150px)}
+.workspace .hl{height:64px!important;top:14px!important}
+.workspace .hr svg[role=img]{display:none}
+}
+.workspace .rg{display:flex;gap:24px}
+.workspace .in:focus{outline:2px solid #2fae9f}
+@media (max-width:900px){.workspace .rg{flex-direction:column}
+}

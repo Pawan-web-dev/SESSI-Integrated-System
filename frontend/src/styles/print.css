@@ -1,0 +1,45 @@
+/*
+ * Printing (receipts, F-4 return, F-5 voucher).
+ * utils/print.ts copies the element with class "print-area" into #print-root and adds
+ * body.printing; while printing only #print-root is shown. "no-print" hides parts of a document.
+ */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0.5cm;
+  }
+  *,
+  *::before,
+  *::after {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  body.printing > *:not(#print-root) {
+    display: none !important;
+  }
+  body.printing #print-root {
+    display: block;
+  }
+  #print-root .print-area {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  /* documents scroll sideways on small screens; on paper they must fit the page */
+  #print-root .overflow-x-auto {
+    overflow: visible !important;
+  }
+  #print-root table {
+    min-width: 0 !important;
+    break-inside: avoid;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

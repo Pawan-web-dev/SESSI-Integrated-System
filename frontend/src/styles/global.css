@@ -1,0 +1,66 @@
+/*
+ * Global stylesheet – Tailwind CSS v4.
+ *
+ * Tailwind's reset ("preflight") is deliberately NOT loaded: the screens are pixel-matched to the
+ * approved design, which relies on normal browser defaults. Only the theme + utility classes are used.
+ *
+ * Layer order (later wins): theme < base < components < utilities
+ *   components = the design's class rules (portal.css, workspace.css)
+ *   utilities  = Tailwind classes written in the JSX
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import './portal.css' layer(components);
+@import './workspace.css' layer(components);
+@import './print.css';
+
+/* ESSI design tokens -> Tailwind classes, e.g. bg-essi-green, text-ink-muted, border-essi-line */
+@theme {
+  /* brand greens */
+  --color-essi-green: #067a35; /* primary buttons, links, headings bars */
+  --color-essi-dark: #0b4d24; /* dark buttons, titles */
+  --color-essi-deep: #0b5d2a; /* banner title text */
+  --color-essi-paid: #0a6b2b; /* receipt "PAID" stamp */
+  --color-essi-teal: #2fae9f; /* focus outline, form borders */
+  --color-essi-footer: #026733;
+
+  /* surfaces + lines */
+  --color-essi-line: #cfe4d5; /* default border */
+  --color-essi-input: #b9d6c4; /* input border */
+  --color-essi-mint: #e3f2e8; /* table header background */
+  --color-essi-pale: #f4fbf6; /* panel background */
+  --color-essi-tint: #dff3e5; /* selected menu / success tag */
+
+  /* text */
+  --color-ink: #17321f; /* body text */
+  --color-ink-soft: #3d5a45;
+  --color-ink-muted: #4d6654;
+  --color-ink-print: #111; /* printed documents */
+
+  /* status */
+  --color-danger: #b00020;
+  --color-danger-bg: #fdecea;
+  --color-warning: #b45309;
+  --color-info: #0b5fa8;
+
+  /* shadows */
+  --shadow-card: 0 1px 2px rgba(6, 122, 53, 0.08); /* dashboard cards */
+  --shadow-panel: 0 4px 18px rgba(6, 122, 53, 0.12); /* main white panel */
+  --shadow-menu: 0 6px 20px rgba(0, 0, 0, 0.2); /* drop-down menu */
+
+  /* fonts */
+  --font-essi: Inter, 'Segoe UI', Arial, sans-serif;
+  --font-document: 'Times New Roman', Times, serif; /* printed receipts / forms */
+  --font-arial: Arial, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  background: #fff;
+}
