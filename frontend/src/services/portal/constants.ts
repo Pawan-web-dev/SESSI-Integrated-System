@@ -14,10 +14,10 @@ export const DIRECTORATES: Record<string, string> = Object.fromEntries(DIRECTORA
 
 /** The four review stages of a registration application: [title, description]. */
 export const REVIEW_STAGES: [string, string][] = [
-  ['Application submitted', 'We received your application and uploaded documents.'],
-  ['Documents verification', 'ESSI officers check your SECP, NTN, SRB and CNIC documents.'],
-  ['Directorate review / inspection', 'Your area directorate reviews the establishment details.'],
-  ['Final approval', 'Your Employer No. is issued and you can log in.'],
+  ['Application Submitted', 'We received your application and uploaded documents.'],
+  ['Under Review', 'ESSI officers check your SECP, NTN, SRB and CNIC documents.'],
+  ['Approved', 'Your area directorate reviews the establishment details.'],
+  ['Registration Complete', 'Your Employer No. is issued and you can log in.'],
 ];
 
 /** Activity-log labels by event code. */
