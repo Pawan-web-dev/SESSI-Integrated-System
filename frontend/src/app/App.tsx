@@ -28,5 +28,3 @@ export default function App() {
     </Suspense>
   );
 }
-// testing testing
-//again testing

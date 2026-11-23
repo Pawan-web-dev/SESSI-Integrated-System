@@ -80,7 +80,7 @@ src/
 │   │                            masterData = Directorate + Industry tables, employerNumber = EIN)
 │   └── api/                     axios client for the future FastAPI backend
 ├── types/view.ts                ViewProps / ViewEnv shared by dashboard + registration views
-└── utils/                       format, hash, print, noop helpers
+└── utils/                       format, hash, print helpers
 ```
 
 ## Conventions

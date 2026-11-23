@@ -34,4 +34,3 @@ export const BackIcon = () => (
     <path d="M15 6l-6 6 6 6" />
   </svg>
 );
-// testing by ashar
