@@ -1,24 +1,29 @@
-<<<<<<< HEAD
-﻿# SESSI Integrated Management System
+# SESSI Integrated Management System
 
-ESSI Sindh Employer Portal – monorepo.
+Sindh Employees' Social Security Institution (SESSI) – Employer Portal and supporting services.
 
-| Folder              | Contents                                                                 |
-| ------------------- | ------------------------------------------------------------------------ |
-| `frontend/`         | React + TypeScript + Vite employer portal (see `frontend/README.md`)     |
-| `backend/`          | Python FastAPI service (planned)                                         |
-| `database/`         | PostgreSQL schema, ERD and data dictionary (planned)                     |
-| `docs/`             | Architecture, API contracts, development guide, progress                 |
-| `design-reference/` | Approved design: `source/` (original HTML + zip), `notes/` (analysis), `analysis/` (extracted design code used during the rebuild) |
-| `archive/`          | Earlier frontend attempt kept for reference – not used by the app        |
+| Folder              | Contents                                                                    | Status      |
+| ------------------- | --------------------------------------------------------------------------- | ----------- |
+| `frontend/`         | Employer Portal – React 19, TypeScript, Vite, Tailwind CSS                  | Working     |
+| `backend/`          | REST API – Python, FastAPI                                                   | Scaffold    |
+| `database/`         | PostgreSQL schema, ERD, data dictionary                                      | Planned     |
+| `docs/`             | Architecture, development guide, API contracts, progress                    | –           |
+| `design-reference/` | Approved UI design (single HTML file) that the frontend reproduces          | Reference   |
 
-Quick start:
+## Quick start
 
 ```powershell
 cd frontend
 npm install
 npm run dev
 ```
-=======
-# SESSI-Integrated-System 
->>>>>>> 28512a8360c0a341654951724ea075da355a55a7
+
+Open http://localhost:5173 – demo logins are listed on the login page.
+
+## Documentation
+
+- [frontend/README.md](frontend/README.md) – folder structure, Tailwind theme, Employer Number, printing
+- [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) – setup, scripts, conventions, git workflow
+- [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) – how the parts fit together
+- [docs/API_INTEGRATION.md](docs/API_INTEGRATION.md) – connecting the frontend to the backend
+- [docs/PROGRESS.md](docs/PROGRESS.md) – what is done and what is next

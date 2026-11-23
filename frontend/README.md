@@ -1,7 +1,7 @@
 # ESSI Sindh – Employer Portal (frontend)
 
 React 19 + TypeScript + Vite + Tailwind CSS v4. Pixel-matched rebuild of the approved design
-(`../design-reference/source/ESSI_Employer_Portal_updated version.html`).
+(`../design-reference/employer-portal-design.html`).
 
 ```powershell
 npm install
@@ -80,7 +80,7 @@ src/
 │   │                            masterData = Directorate + Industry tables, employerNumber = EIN)
 │   └── api/                     axios client for the future FastAPI backend
 ├── types/view.ts                ViewProps / ViewEnv shared by dashboard + registration views
-└── utils/                       format, hash, print, noop helpers
+└── utils/                       format, hash, print helpers
 ```
 
 ## Conventions

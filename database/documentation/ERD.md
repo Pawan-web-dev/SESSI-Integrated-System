@@ -1,4 +1,4 @@
-﻿# Entity Relationship Diagram
+# Entity Relationship Diagram
 
 - Employers
 - Workers
