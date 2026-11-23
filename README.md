@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿# SESSI Integrated Management System
 
 ESSI Sindh Employer Portal – monorepo.
@@ -18,3 +19,6 @@ cd frontend
 npm install
 npm run dev
 ```
+=======
+# SESSI-Integrated-System 
+>>>>>>> 28512a8360c0a341654951724ea075da355a55a7
