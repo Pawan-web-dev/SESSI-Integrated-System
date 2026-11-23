@@ -6,14 +6,6 @@ export function DashboardSidebar({ v, P }: ViewProps) {
   return (
     <>
       <aside className={`sb ${v.sbOpen} w-[270px] bg-white border-r border-r-essi-line py-4.5 px-0 box-border flex-none`}>
-        <div className="pt-0 px-4 pb-2">
-          <div className="font-bold text-[17px]">
-            {P.coName}
-          </div>
-          <span className="inline-block mt-1.5 bg-essi-tint text-essi-dark rounded-xl py-0.75 px-2.5 text-[12px] font-semibold">
-            {"Approved Employer"}
-          </span>
-        </div>
         <nav>
           {(v.groups || []).map((g: Any, _i1: number) => (<React.Fragment key={_i1}>
             {g.hasHead ? (<>
