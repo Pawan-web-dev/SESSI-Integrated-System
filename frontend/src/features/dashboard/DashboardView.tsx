@@ -4,7 +4,6 @@ import { AppFooter } from '@/components/layout/AppFooter';
 import { DashboardHeader } from './layout/DashboardHeader';
 import { DashboardSidebar } from './layout/DashboardSidebar';
 import { MobileMenuButton } from './layout/MobileMenuButton';
-import { WelcomeBanner } from './layout/WelcomeBanner';
 import { ComingSoonSection } from './sections/common/ComingSoonSection';
 import { BusinessInformationSection } from './sections/company-profile/BusinessInformationSection';
 import { ChangeRequestDetailsSection } from './sections/company-profile/ChangeRequestDetailsSection';
@@ -42,7 +41,6 @@ export function DashboardView({ v, P }: ViewProps) {
         <DashboardSidebar v={v} P={P} />
         <main className="mn flex-1 p-6 box-border min-w-0">
           <MobileMenuButton v={v} P={P} />
-          <WelcomeBanner v={v} P={P} />
           {v.isCS ? <ContributionSummarySection v={v} P={P} /> : null}
           {v.isDash ? <OverviewSection v={v} P={P} /> : null}
           {v.isReg ? <RegisterEmployeeSection v={v} P={P} /> : null}
