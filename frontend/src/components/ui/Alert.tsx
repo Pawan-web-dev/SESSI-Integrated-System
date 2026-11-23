@@ -15,4 +15,3 @@ export function Alert({ kind, message, id }: AlertProps) {
     </div>
   );
 }
-///estd
