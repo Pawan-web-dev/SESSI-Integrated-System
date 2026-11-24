@@ -21,14 +21,14 @@ export function BusinessInformationSection({ v, P }: ViewProps) {
               {v.co.employer}
             </div>
             <div className="text-[13px] text-ink-soft mt-1">
-              {"Employer No. (EIN) "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on 12-Oct-2026 (sample)"}
+              {"Employer No. (EIN) "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on " + v.registeredOn}
             </div>
           </div>
           <span className="bg-essi-tint text-essi-dark rounded-[14px] py-1 px-3.5 text-[13px] font-bold">
             {"Approved Employer"}
           </span>
         </div>
-        <EmployerNumberCard ein={P.empNo} />
+        <EmployerNumberCard info={v.ein} />
         <div className="bg-white border border-solid border-essi-line rounded-[10px] mt-3.5 overflow-hidden">
           <div className="flex items-center gap-2.5 py-3.5 px-4 border-b border-b-essi-line font-bold text-[16px] text-essi-dark">
             <svg width={"22"} height={"22"} viewBox={"0 0 24 24"} fill={"none"} stroke={"#067a35"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"} className="flex-none">
@@ -133,7 +133,7 @@ export function BusinessInformationSection({ v, P }: ViewProps) {
           </button>
         </div>
         <div className="text-[13px] text-ink-muted mt-3">
-          {"Registered details can only be changed through a change request that ESSI reviews. All values shown are sample data."}
+          {"Registered details can only be changed through a change request that ESSI reviews."}
         </div>
       </div>
     </>

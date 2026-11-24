@@ -20,7 +20,7 @@ export function ContactLocationSection({ v, P }: ViewProps) {
               {v.co.employer}
             </div>
             <div className="text-[13px] text-ink-soft mt-1">
-              {"Employer Registration No. "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on 12-Oct-2026 (sample)"}
+              {"Employer Registration No. "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on " + v.registeredOn}
             </div>
           </div>
           <span className="bg-essi-tint text-essi-dark rounded-[14px] py-1 px-3.5 text-[13px] font-bold">
@@ -129,7 +129,7 @@ export function ContactLocationSection({ v, P }: ViewProps) {
           </button>
         </div>
         <div className="text-[13px] text-ink-muted mt-3">
-          {"Registered details can only be changed through a change request that ESSI reviews. All values shown are sample data."}
+          {"Registered details can only be changed through a change request that ESSI reviews."}
         </div>
       </div>
     </>

@@ -9,7 +9,7 @@ export function NewChangeRequestSection({ v }: ViewProps) {
           {"NEW CHANGE REQUEST"}
         </div>
         <div className="mt-3.5 bg-[#eef6fb] border border-solid border-[#b9d3f0] rounded-lg py-3 px-4 text-[14px] text-[#0b3d91]">
-          {"Changes take effect only after ESSI reviews and approves the request. Typical review time: 3 working days (sample)."}
+          {"Changes take effect only after ESSI reviews and approves the request."}
         </div>
         <div className="bg-white border border-solid border-essi-line rounded-[10px] mt-3.5 p-5 max-w-[640px]">
           <div className="flex flex-col gap-4">

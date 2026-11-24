@@ -27,7 +27,7 @@ export function DashboardHeader({ v, P }: ViewProps) {
               </path>
             </svg>
             <span className="absolute top-0.5 right-0.5 bg-[#e11] rounded-[10px] text-[11px] font-bold py-px px-1.5">
-              {P.empty ? "1" : "3"}
+              {v.notifCount}
             </span>
           </button>
           <span className="hn relative">

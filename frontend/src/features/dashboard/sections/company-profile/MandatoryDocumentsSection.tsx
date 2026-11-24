@@ -21,7 +21,7 @@ export function MandatoryDocumentsSection({ v, P }: ViewProps) {
               {v.co.employer}
             </div>
             <div className="text-[13px] text-ink-soft mt-1">
-              {"Employer Registration No. "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on 12-Oct-2026 (sample)"}
+              {"Employer Registration No. "}{P.empNo}{"  |  "}{P.dir}{"  |  Registered on " + v.registeredOn}
             </div>
           </div>
           <span className="bg-essi-tint text-essi-dark rounded-[14px] py-1 px-3.5 text-[13px] font-bold">
@@ -29,8 +29,9 @@ export function MandatoryDocumentsSection({ v, P }: ViewProps) {
           </span>
         </div>
         <div className="mt-3.5 text-[13px] text-ink-soft">
-          {"Documents uploaded at registration (PDF, JPG or PNG, max 5 MB each)."}
+          {"Documents you uploaded at registration. Press View to open a file. To replace a document, contact your ESSI Directorate."}
         </div>
+
         <div className="bg-white border border-solid border-essi-line rounded-[10px] mt-2.5 overflow-x-auto">
           <table className="w-full min-w-[680px] border-collapse"><tbody>
             <tr>
@@ -65,22 +66,18 @@ export function MandatoryDocumentsSection({ v, P }: ViewProps) {
                   {d.status}
                 </td>
                 <td className="p-2.5 border border-solid border-essi-line text-[13px]">
-                  {d.has ? (<>
-                    <button className="min-h-[44px] py-0 px-3.5 border border-solid border-essi-green rounded-md bg-white text-essi-green">
+                  {d.canView ? (<>
+                    <button type="button" onClick={d.view} className="min-h-[44px] py-0 px-3.5 border border-solid border-essi-green rounded-md bg-white text-essi-green cursor-pointer">
                       {"View"}
                     </button>
-                    {" "}
-                    <button className="min-h-[44px] py-0 px-3.5 border border-solid border-essi-green rounded-md bg-white text-essi-green">
-                      {"Replace"}
-                    </button>
-                  </>) : null}
+                  </>) : d.has ? (<span className="text-ink-muted">{"File not stored"}</span>) : null}
                 </td>
               </tr>
             </React.Fragment>))}
           </tbody></table>
         </div>
         <div className="text-[13px] text-ink-muted mt-3">
-          {"Registered details can only be changed through a change request that ESSI reviews. All values shown are sample data."}
+          {"Registered details can only be changed through a change request that ESSI reviews."}
         </div>
       </div>
     </>

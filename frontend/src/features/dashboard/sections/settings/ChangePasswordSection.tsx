@@ -20,7 +20,7 @@ export function ChangePasswordSection({ v }: ViewProps) {
               {"Password updated"}
             </div>
             <p className="text-ink-soft text-[14px] mt-2 mx-0 mb-4">
-              {"Demo only. No password was stored."}
+              {"Your new password is active. Use it the next time you log in."}
             </p>
             <button onClick={v.pwAgain} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-5 rounded-lg text-[14px] font-semibold bg-white text-essi-green border border-solid border-essi-green">
               {"Change again"}

@@ -21,11 +21,8 @@ export function DocumentUploadStep({ v }: ViewProps) {
         </div>
         <div className="flex flex-wrap justify-between items-center gap-2.5 mb-3">
           <div className="text-[13px] text-ink-soft">
-            {"Upload the following documents in PDF, JPG or PNG format (max size 5 MB each). Fields marked * are required."}
+            {`Upload the following documents in PDF, JPG or PNG format (max size ${v.maxMb} MB each). Fields marked * are required.`}
           </div>
-          <button onClick={v.sampleDocs} className="min-h-[44px] py-0 px-3.5 border border-dashed border-essi-green rounded-lg bg-white text-essi-green font-semibold text-[13px]">
-            {"Use sample documents (demo)"}
-          </button>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(170px,100%),1fr))] gap-3">
           {(v.docTiles || []).map((d: Any, _i2: number) => (<React.Fragment key={_i2}>
@@ -40,7 +37,7 @@ export function DocumentUploadStep({ v }: ViewProps) {
               <span className="text-[11px] wrap-anywhere" style={{color: d.sc}}>
                 {d.sub}
               </span>
-              <input type={"file"} accept={".pdf,.jpg,.jpeg,.png"} onChange={d.pick} className="absolute left-0 top-0 w-full h-full opacity-[0] cursor-pointer" />
+              <input type={"file"} accept={".pdf,.jpg,.jpeg,.png"} onChange={d.pick} disabled={d.busy} className="absolute left-0 top-0 w-full h-full opacity-[0] cursor-pointer" />
             </label>
           </React.Fragment>))}
         </div>
@@ -67,7 +64,7 @@ export function DocumentUploadStep({ v }: ViewProps) {
               </svg>
               {"Reset"}
             </button>
-            <button onClick={v.next} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
+            <button onClick={v.next} disabled={v.busy} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
               <svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"} className="flex-none">
                 <path d={"M5 12h14M13 6l6 6-6 6"}>
                 </path>

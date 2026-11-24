@@ -29,13 +29,13 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
               <span>
                 {"Your contribution for "}
                 <b>
-                  {"November 2026"}
+                  {v.ch.month}
                 </b>
                 {" has been "}
                 <b>
                   {"approved"}
                 </b>
-                {" on 18-Nov-2026. Your voucher is ready for payment. Status: "}
+                {" on " + v.ch.approvedOn + ". Challan " + v.ch.challanNo + " is due by " + v.ch.due + ". Status: "}
                 <b>
                   {v.payStatus}
                 </b>
@@ -48,7 +48,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                   <div className="font-bold [font-size:clamp(15px,2.2vw,22px)] leading-[1.25]">
                     {"SINDH EMPLOYEES' SOCIAL SECURITY INSTITUTION"}
                     <br />
-                    {"LANDHI DIRECTORATE"}
+                    {P.dir.toUpperCase()}
                   </div>
                   <div className="font-bold text-[12px] mt-2.5">
                     {"ACCOUNT TITLE: SESSI COLLECTION ACCOUNT, ACCOUNT NUMBER: 0100000000000001 (sample)"}
@@ -62,7 +62,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                 <span>
                   {"Date: "}
                   <b>
-                    {"18/11/2026"}
+                    {v.ch.date}
                   </b>
                 </span>
                 <span className="font-bold underline text-center flex-1 min-w-[240px]">
@@ -71,7 +71,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                 <span>
                   {"Voucher No. "}
                   <b>
-                    {"2611004512"}
+                    {v.ch.voucher}
                   </b>
                 </span>
               </div>
@@ -105,27 +105,28 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                   </tr>
                   <tr>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"November, 2026"}
+                      {v.ch.month}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
                       {P.empNo}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"48"}
+                      {v.ch.workers}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"ABC MANUFACTURING"}
+                      {P.coName.toUpperCase()}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"Rs. 106,560"}
+                      {"Rs. " + v.ch.contribution}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"Rs. 40"}
+                      {"Rs. " + v.ch.svc}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
+                      {"Rs. " + v.ch.increase}
                     </td>
                     <td className="border border-solid border-ink-print py-2 px-2.5 text-center text-[14px]">
-                      {"Rs. 106,600"}
+                      {"Rs. " + v.ch.total}
                     </td>
                   </tr>
                 </tbody></table>
@@ -133,7 +134,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
               <p className="text-[14px] my-2.5 mx-0">
                 {"Amount payable within due date: Rupees "}
                 <u>
-                  {"ONE HUNDRED SIX THOUSAND SIX HUNDRED RUPEES ONLY"}
+                  {v.ch.words + " ONLY"}
                 </u>
                 {". Made up as shown above"}
               </p>
@@ -209,7 +210,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                   <b>
                     {"3."}
                   </b>
-                  {" Service Charges Amounting PKR 30 + 1Link Standard Charges will be paid by depositor/employer."}
+                  {" Service Charges Amounting PKR " + v.ch.svc + " + 1Link Standard Charges will be paid by depositor/employer."}
                 </div>
               </div>
               <div className="flex flex-wrap justify-between items-end gap-4 mt-4">
@@ -249,7 +250,6 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                 </div>
               </div>
               <div className="font-arial text-[12px] text-[#555] mt-3">
-                {"Sample voucher with dummy values for design reference."}
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2.5 items-center">
@@ -259,7 +259,7 @@ export function GenerateChallanSection({ v, P }: ViewProps) {
                     <path d={"M3 6h18v12H3zM3 10h18M7 15h3"}>
                     </path>
                   </svg>
-                  {"Pay via 1Bill (demo)"}
+                  {v.paying ? "Processing payment…" : "Pay via 1Bill"}
                 </button>
               </>) : null}
               {v.isPaidNow ? (<>

@@ -129,7 +129,7 @@ export function F5VoucherSection({ v, P }: ViewProps) {
                   {"Payment channel"}
                 </td>
                 <td className="border border-solid border-ink-print py-2 px-2.5 text-[14px] text-left">
-                  {"1Bill (sample)"}
+                  {v.lv.channel}
                 </td>
               </tr>
               <tr>
@@ -145,7 +145,7 @@ export function F5VoucherSection({ v, P }: ViewProps) {
                   {"Transaction / Reference ID"}
                 </td>
                 <td className="border border-solid border-ink-print py-2 px-2.5 text-[14px] text-left">
-                  {"1L-20260907-0391155 (sample)"}
+                  {v.lv.txn}
                 </td>
               </tr>
               <tr>
@@ -207,7 +207,7 @@ export function F5VoucherSection({ v, P }: ViewProps) {
             </div>
           </div>
           <div className="font-arial text-[12px] text-[#555] mt-3">
-            {"Sample receipt with dummy values. The heading follows SESSI's F-5 receipt. Increase is calculated at ½% per day, up to 50% of the contribution (section 24(1), SESS Act 2016, Amendment Act 2018); the rest of the layout is a proposal."}
+            {"Increase is calculated at ½% per day, up to 50% of the contribution (section 24(1), SESS Act 2016, Amendment Act 2018);"}
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2.5">

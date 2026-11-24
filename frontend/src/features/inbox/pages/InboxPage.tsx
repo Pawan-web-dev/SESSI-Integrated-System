@@ -4,11 +4,14 @@ import { ROUTES } from '@/app/routes';
 import { PortalFooter } from '@/components/layout/PortalFooter';
 import { PortalHeader } from '@/components/layout/PortalHeader';
 import { PortalPage } from '@/components/layout/PortalPage';
-import { getMessages } from '@/services/portal';
-import { digitsOnly } from '@/utils/format';
+import { errorMessage } from '@/services/api/errors';
+import { useGetOutboxQuery } from '../inboxApi';
 import { MessageCard } from '../components/MessageCard';
 
-/** Demo SMS / email inbox (#/inbox): every message ESSI "sent", filterable by mobile or email. */
+/**
+ * SMS / e-mail inbox for testing (#/inbox): messages the server would send, filterable by mobile or e-mail.
+ * Works only while the backend runs with DEMO_MODE=true (until an SMS gateway and SMTP are connected).
+ */
 export function InboxPage() {
   const [query, setQuery] = useState('');
 
@@ -17,8 +20,7 @@ export function InboxPage() {
   }, []);
 
   const q = query.trim().toLowerCase();
-  const qDigits = digitsOnly(q);
-  const messages = getMessages().filter((m) => !q || String(m.email).toLowerCase() === q || (qDigits.length >= 10 && digitsOnly(m.mobile) === qDigits));
+  const { data: messages = [], error, isFetching } = useGetOutboxQuery(q, { pollingInterval: 10000 });
 
   return (
     <PortalPage label="Demo inbox">
@@ -33,7 +35,7 @@ export function InboxPage() {
             <label htmlFor="in-q">Mobile number or email</label>
             <input className="inp" id="in-q" placeholder="e.g. 0333-1112223 or name@company.com" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
-          <div id="in-list">{messages.length ? messages.map((m, i) => <MessageCard key={i} message={m} />) : <p className="text-ink-muted">No messages yet.</p>}</div>
+          <div id="in-list">{error ? <p className="text-danger">{errorMessage(error)}</p> : messages.length ? messages.map((m, i) => <MessageCard key={i} message={m} />) : <p className="text-ink-muted">{isFetching ? 'Loading…' : 'No messages yet.'}</p>}</div>
         </div>
       </div>
       <PortalFooter />

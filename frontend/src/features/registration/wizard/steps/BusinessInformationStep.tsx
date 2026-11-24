@@ -191,7 +191,7 @@ export function BusinessInformationStep({ v }: ViewProps) {
               </span>
             </label>
             <div className="flex gap-2">
-              <input type={"text"} placeholder={"Select Location on Map"} value={v.v_gps} readOnly className="py-0 px-3 min-h-[44px] border border-solid border-essi-input rounded-md text-[14px] box-border w-full font-[inherit] bg-[#f6fbf8]" />
+              <input type={"text"} placeholder={"Press View Map, or type e.g. 24.8400° N, 67.1800° E"} value={v.v_gps} onChange={v.h_gps} className="py-0 px-3 min-h-[44px] border border-solid border-essi-input rounded-md text-[14px] box-border w-full font-[inherit] bg-[#f6fbf8]" />
               <button onClick={v.viewMap} className="inline-flex items-center gap-1.5 min-h-[44px] py-0 px-4 border-0 rounded-md bg-essi-dark text-white font-semibold flex-none">
                 <svg width={"18"} height={"18"} viewBox={"0 0 24 24"} fill={"none"} stroke={"#fff"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"} className="flex-none">
                   <path d={"M12 21s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12zM12 11a2 2 0 100-4 2 2 0 000 4z"}>
@@ -235,7 +235,7 @@ export function BusinessInformationStep({ v }: ViewProps) {
               </svg>
               {"Reset"}
             </button>
-            <button onClick={v.next} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
+            <button onClick={v.next} disabled={v.busy} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
               <svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"} className="flex-none">
                 <path d={"M5 12h14M13 6l6 6-6 6"}>
                 </path>

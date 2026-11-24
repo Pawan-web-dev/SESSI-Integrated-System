@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ApplicationTimeline } from '@/components/shared/ApplicationTimeline';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
-import { getAccounts, getStatus, type Account } from '@/services/portal';
-import { digitsOnly } from '@/utils/format';
+import { errorMessage } from '@/services/api/errors';
+import type { Application } from '@/services/api/types';
+import { useLazyTrackApplicationQuery } from '../authApi';
 
 const STATUS_STYLE = {
   pending: ['Pending approval', '#fff4d6', '#8a5200'],
@@ -16,7 +17,8 @@ export function TrackApplicationModal({ open, onClose }: { open: boolean; onClos
   const [appNo, setAppNo] = useState('');
   const [cnic, setCnic] = useState('');
   const [error, setError] = useState('');
-  const [result, setResult] = useState<Account | null>(null);
+  const [result, setResult] = useState<Application | null>(null);
+  const [track, { isFetching }] = useLazyTrackApplicationQuery();
   const appNoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,15 +28,15 @@ export function TrackApplicationModal({ open, onClose }: { open: boolean; onClos
     setTimeout(() => appNoRef.current?.focus(), 0);
   }, [open]);
 
-  const check = () => {
-    const a = getAccounts().find((x) => x.appNo && x.appNo.toUpperCase() === appNo.trim().toUpperCase() && digitsOnly(x.cnic) === digitsOnly(cnic));
-    if (!a) {
-      setError('No application found for that Application No. and CNIC.');
+  const check = async () => {
+    if (!appNo.trim() || !cnic.trim()) return setError('Enter the Application No. and CNIC.');
+    try {
+      setResult(await track({ app_no: appNo.trim(), cnic: cnic.trim() }).unwrap());
+      setError('');
+    } catch (err) {
+      setError(errorMessage(err));
       setResult(null);
-      return;
     }
-    setError('');
-    setResult(a);
   };
 
   return (
@@ -57,31 +59,31 @@ export function TrackApplicationModal({ open, onClose }: { open: boolean; onClos
         <button className="btn ghost" onClick={onClose}>
           Close
         </button>
-        <button className="btn" id="tr-go" onClick={check}>
-          Check status
+        <button className="btn" id="tr-go" disabled={isFetching} onClick={() => void check()}>
+          {isFetching ? 'Checking…' : 'Check status'}
         </button>
       </div>
     </Modal>
   );
 }
 
-function TrackResult({ application: a }: { application: Account }) {
-  const status = getStatus(a);
+function TrackResult({ application: a }: { application: Application }) {
+  const status = a.status;
   const [label, bg, fg] = STATUS_STYLE[status];
   const message =
     status === 'pending' ? (
       'ESSI is verifying your documents. Check again later.'
     ) : status === 'approved' ? (
       <>
-        Your Employer No. is <b>{a.employerNo}</b>. Log in with it (or your CNIC / email) and the password you created.
+        Your Employer No. is <b>{a.employer_no}</b>. Log in with it (or your CNIC / email) and the password you created.
       </>
     ) : (
-      'Reason: ' + (a.reason || '-') + '. Please register again with corrected details.'
+      'Reason: ' + (a.rejection_reason || '-') + '. Please register again with corrected details.'
     );
   return (
     <>
       <div className="rounded-lg py-3 px-3.5 mb-3.5" style={{background: bg, color: fg}}>
-        <b>{label}</b> — {a.co.employer}
+        <b>{label}</b> — {a.employer_name}
         <br />
         <span className="text-[14px] text-[#25324a]">{message}</span>
       </div>

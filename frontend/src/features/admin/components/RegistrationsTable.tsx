@@ -1,12 +1,14 @@
-import { completedStages, REVIEW_STAGES, type Account, type ApplicationStatus } from '@/services/portal';
+import type { ApplicationStatus, ApplicationSummary } from '@/services/api/types';
+import { formatDateTime } from '@/utils/format';
 
 /** table cell classes */
 const CELL = 'p-2.5 border border-solid border-essi-line text-left';
+const NEXT_STEP = ['Under Review', 'Approved', 'Registration Complete'];
 
 interface RegistrationsTableProps {
   tab: ApplicationStatus;
-  rows: Account[];
-  onReview: (id: string) => void;
+  rows: ApplicationSummary[];
+  onReview: (id: number) => void;
 }
 
 /** Table of applications for the selected tab (pending / approved / rejected). */
@@ -25,7 +27,7 @@ export function RegistrationsTable({ tab, rows, onReview }: RegistrationsTablePr
         {rows.length ? (
           rows.map((a) => (
             <tr key={a.id}>
-              {[a.appNo, a.co.employer, a.co.person, a.cnic, a.submitted].map((x, i) => (
+              {[a.app_no, a.employer_name, a.applicant, a.cnic, formatDateTime(a.submitted_at)].map((x, i) => (
                 <td key={i} className={CELL}>
                   {x}
                 </td>
@@ -37,17 +39,21 @@ export function RegistrationsTable({ tab, rows, onReview }: RegistrationsTablePr
                       Review
                     </button>
                     <br />
-                    <small>{'Step ' + (completedStages(a) + 1) + ' of 4: ' + REVIEW_STAGES[completedStages(a)][0]}</small>
+                    <small>{'Step ' + (Math.min(a.stage, 3) + 1) + ' of 4: ' + NEXT_STEP[Math.min(a.stage, 3) - 1]}</small>
                   </>
                 ) : (
                   <>
-                    {a.employerNo || '—'}
+                    {a.employer_no || '—'}
                     {tab === 'rejected' ? (
                       <>
                         <br />
-                        <small>{a.reason || ''}</small>
+                        <small>{a.rejection_reason || ''}</small>
                       </>
                     ) : null}
+                    {' '}
+                    <button className="link" onClick={() => onReview(a.id)}>
+                      View
+                    </button>
                   </>
                 )}
               </td>

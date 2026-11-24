@@ -29,7 +29,7 @@ export function MonthlyContributionSection({ v, P }: ViewProps) {
           <span>
             {"Period: "}
             <b>
-              {"November 2026"}
+              {v.currentMonthLabel}
             </b>
           </span>
         </div>

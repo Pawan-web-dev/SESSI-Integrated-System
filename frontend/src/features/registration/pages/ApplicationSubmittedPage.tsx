@@ -1,26 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { useAppDispatch } from '@/app/hooks';
 import { ROUTES } from '@/app/routes';
 import { PortalFooter } from '@/components/layout/PortalFooter';
 import { PortalHeader } from '@/components/layout/PortalHeader';
 import { PortalPage } from '@/components/layout/PortalPage';
-import { getAccountById, getLastApplicationId, getStatus, completedStages, startSession, type Account } from '@/services/portal';
+import { setFlash } from '@/features/auth/authSlice';
+import { useTrackApplicationQuery } from '@/features/auth/authApi';
+import { errorMessage } from '@/services/api/errors';
+import type { Application } from '@/services/api/types';
+import { formatDateTime } from '@/utils/format';
+import { loadLastApplication } from '../registrationApi';
 
-/** Refresh interval for the application status (ms). */
-const REFRESH_MS = 3000;
+/** How often the status is refreshed from the server (ms). */
+const REFRESH_MS = 15000;
 
-const loadApplication = () => getAccountById(getLastApplicationId());
+/** Number of completed review stages (approved = all 4). */
+const completedStages = (a: Application) => (a.status === 'approved' ? 4 : Math.max(1, Math.min(3, a.stage)));
+const approvedAt = (a: Application) => a.events.find((e) => e.code === 'final')?.at;
 
 /** Horizontal stepper matching the design screenshot */
-function ApplicationStatusStepper({ application }: { application: Account }) {
-  const status = getStatus(application);
+function ApplicationStatusStepper({ application }: { application: Application }) {
+  const status = application.status;
   const done = completedStages(application);
   const rejected = status === 'rejected';
 
   const steps = [
     {
       title: 'Application Submitted',
-      sub: application.submitted || '14 Nov 2025, 03:45 PM',
+      sub: formatDateTime(application.submitted_at),
       stepNum: 1,
     },
     {
@@ -30,12 +38,12 @@ function ApplicationStatusStepper({ application }: { application: Account }) {
     },
     {
       title: 'Approved',
-      sub: status === 'approved' ? (application.approved || 'Approved') : '',
+      sub: status === 'approved' ? formatDateTime(approvedAt(application)) : status === 'rejected' ? 'Not approved' : '',
       stepNum: 3,
     },
     {
       title: 'Registration Complete',
-      sub: status === 'approved' ? 'Employer No. Issued' : '',
+      sub: status === 'approved' ? `Employer No. ${application.employer_no}` : '',
       stepNum: 4,
     },
   ];
@@ -110,15 +118,29 @@ function ApplicationStatusStepper({ application }: { application: Account }) {
 /** "Application Submitted Successfully!" tracking page shown after registration (#/welcome). */
 export function ApplicationSubmittedPage() {
   const navigate = useNavigate();
-  const [application, setApplication] = useState(loadApplication);
+  const dispatch = useAppDispatch();
+  const last = loadLastApplication();
+  const { data: application, error, isLoading } = useTrackApplicationQuery(last ?? { app_no: '', cnic: '' }, { skip: !last, pollingInterval: REFRESH_MS });
 
   useEffect(() => {
     document.title = 'Application Submitted Successfully! | ESSI Sindh';
-    const timer = setInterval(() => setApplication(loadApplication()), REFRESH_MS);
-    return () => clearInterval(timer);
   }, []);
 
-  if (!application) return <Navigate to={ROUTES.login} replace />;
+  if (!last) return <Navigate to={ROUTES.login} replace />;
+  if (!application) {
+    return (
+      <PortalPage label="Application status">
+        <PortalHeader subtitle="Employer Registration Portal" />
+        <div className="wrap">
+          <div className="card text-center">{isLoading ? 'Loading your application…' : errorMessage(error)}</div>
+        </div>
+        <PortalFooter />
+      </PortalPage>
+    );
+  }
+
+  const approved = application.status === 'approved';
+  const rejected = application.status === 'rejected';
 
   return (
     <PortalPage label="Application Submitted Successfully!">
@@ -151,10 +173,14 @@ export function ApplicationSubmittedPage() {
 
           {/* Heading & Subtitle */}
           <h1 id="w-h1" className="text-[26px] md:text-[32px] font-extrabold text-[#0b4d24] mb-3">
-            Application Submitted Successfully!
+            {approved ? 'Registration Approved!' : rejected ? 'Application Not Approved' : 'Application Submitted Successfully!'}
           </h1>
           <p className="text-[15px] md:text-[16px] text-[#374151] max-w-[680px] mx-auto mb-8 leading-relaxed">
-            Your registration application has been submitted and is currently under review by ESSI Sindh. You will be notified once it is approved.
+            {approved
+              ? `Your registration is approved. Your Employer No. is ${application.employer_no}. Log in with it (or your CNIC / e-mail) and the password you created.`
+              : rejected
+                ? `Your application was not approved. Reason: ${application.rejection_reason || '-'}. Please register again with corrected details.`
+                : 'Your registration application has been submitted and is currently under review by ESSI Sindh. You will be notified by SMS and e-mail once it is approved.'}
           </p>
 
           {/* Application Reference & Submission Date Container */}
@@ -172,7 +198,7 @@ export function ApplicationSubmittedPage() {
                     Application Reference Number
                   </div>
                   <div id="w-app" className="text-[20px] md:text-[22px] font-extrabold text-[#0b4d24] tracking-tight">
-                    {application.appNo || 'ESSI-EMP-2025-10456'}
+                    {application.app_no}
                   </div>
                 </div>
               </div>
@@ -195,7 +221,7 @@ export function ApplicationSubmittedPage() {
                     Submission Date
                   </div>
                   <div id="w-time" className="text-[18px] md:text-[20px] font-extrabold text-[#0b4d24] tracking-tight">
-                    {application.submitted || '14 Nov 2025, 03:45 PM'}
+                    {formatDateTime(application.submitted_at)}
                   </div>
                 </div>
               </div>
@@ -228,15 +254,15 @@ export function ApplicationSubmittedPage() {
           <div className="flex items-center justify-center gap-4 flex-wrap mt-4">
             <button
               onClick={() => {
-                startSession(application);
-                navigate(ROUTES.dashboard);
+                if (approved) dispatch(setFlash(`Your Employer No. is ${application.employer_no}. Log in with it and the password you created.`));
+                navigate(ROUTES.login);
               }}
               className="inline-flex items-center gap-2.5 bg-[#0b4d24] hover:bg-[#08401e] text-white font-semibold px-8 py-3.5 rounded-xl text-[16px] shadow-sm transition-all cursor-pointer border-0"
             >
               <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 001-1h2a1 1 0 001 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l1.293 1.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
-              Go to Dashboard
+              {approved ? 'Go to Login' : 'Back to Login'}
             </button>
           </div>
         </div>

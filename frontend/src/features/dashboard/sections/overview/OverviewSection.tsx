@@ -109,7 +109,7 @@ export function OverviewSection({ v, P }: ViewProps) {
               {"Current contribution month"}
             </div>
             <div className="text-[13px] text-ink-muted">
-              {"November, 2026"}
+              {v.currentMonthLabel}
             </div>
           </div>
           <div className="mb-2.5">

@@ -1,45 +1,47 @@
-import { useEffect, useMemo } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAppSelector } from '@/app/hooks';
 import { ROUTES } from '@/app/routes';
-import { endSession, getSessionAccount, setLoginFlash, type Account } from '@/services/portal';
-import { sanitizeText } from '@/utils/format';
-import { createDashboard } from '../logic/createDashboard';
+import { DashboardView } from '../DashboardView';
+import { useDashboardModel } from '../logic/useDashboardModel';
 
 /** Employer dashboard (#/dashboard). Requires a signed-in employer. */
 export function DashboardPage() {
-  const account = getSessionAccount();
-  if (!account) return <Navigate to={ROUTES.login} replace />;
-  return <EmployerDashboard key={account.id} account={account} />;
+  const signedIn = useAppSelector((s) => !!s.auth.employer);
+  if (!signedIn) return <Navigate to={ROUTES.login} replace />;
+  return <EmployerDashboard />;
 }
 
-function EmployerDashboard({ account }: { account: Account }) {
-  const navigate = useNavigate();
-
-  // the dashboard component is built once per account
-  const Dashboard = useMemo(() => {
-    const company: Record<string, string> = {};
-    (Object.keys(account.co) as (keyof Account['co'])[]).forEach((k) => (company[k] = sanitizeText(account.co[k])));
-    return createDashboard({
-      acc: String(account.id).replace(/[^a-z0-9]/gi, ''),
-      coName: company.employer,
-      empNo: account.employerNo,
-      person: company.person || 'Employer',
-      dir: sanitizeText(account.dir) || 'City Directorate',
-      coBase: company,
-      empty: account.variant === 'empty',
-      onLogout: () => {
-        endSession();
-        setLoginFlash('You have been logged out successfully.');
-        navigate(ROUTES.login);
-      },
-      nav: (to) => navigate('/' + to),
-    });
-  }, [account, navigate]);
+function EmployerDashboard() {
+  const { v, env, loading, error } = useDashboardModel();
 
   useEffect(() => {
-    document.title = 'Dashboard – ' + account.co.employer + ' | ESSI Sindh';
+    if (env.coName) document.title = 'Dashboard – ' + env.coName + ' | ESSI Sindh';
     window.scrollTo(0, 0);
-  }, [account]);
+  }, [env.coName]);
 
-  return <Dashboard />;
+  if (loading || error) {
+    return (
+      <div className="workspace">
+        <div className="mx-auto mt-16 max-w-[520px] rounded-xl border border-solid border-essi-line bg-white p-6 text-center text-[15px]">
+          {loading ? (
+            'Loading your dashboard…'
+          ) : (
+            <>
+              <p className="mt-0 text-danger">{error}</p>
+              <button className="min-h-[44px] cursor-pointer rounded-lg border-0 bg-essi-dark px-5 font-semibold text-white" onClick={() => window.location.reload()}>
+                Try again
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="workspace">
+      <DashboardView v={v} P={env} />
+    </div>
+  );
 }

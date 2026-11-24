@@ -16,7 +16,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
             {"Contribution Submitted Successfully!"}
           </h2>
           <p className="mt-2.5 mx-auto mb-0 max-w-[560px] text-[16px] text-[#25324a]">
-            {"Your contribution has been submitted and is now pending for approval by the ESSI Sindh team."}
+            {"Your contribution has been recorded and approved. Challan " + v.done.challan + " for PKR " + v.done.total + " is ready for payment."}
           </p>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-2.5 mt-6 mx-0 mb-0 bg-essi-mint border border-solid border-essi-line rounded-[10px] p-3.5 text-left">
             <div className="flex gap-2.5 items-start py-1.5 px-2.5">
@@ -29,7 +29,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
                   {"Contribution Month"}
                 </div>
                 <div className="text-[18px] font-bold mt-1">
-                  {"November, 2026"}
+                  {v.done.month}
                 </div>
               </div>
             </div>
@@ -43,7 +43,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
                   {"Submission Reference No."}
                 </div>
                 <div className="text-[18px] font-bold mt-1">
-                  {"CNTR-2026-00123"}
+                  {v.done.ref}
                 </div>
               </div>
             </div>
@@ -57,7 +57,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
                   {"Submission Date & Time"}
                 </div>
                 <div className="text-[18px] font-bold mt-1">
-                  {"17-Nov-2026 10:45 AM"}
+                  {v.done.at}
                 </div>
               </div>
             </div>
@@ -72,7 +72,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
                 </div>
                 <div className="text-[18px] font-bold mt-1">
                   <span className="inline-block bg-[#9fe3b3] text-essi-dark rounded-[14px] py-0.75 px-3 text-[13px] font-semibold">
-                    {"Pending for Approval"}
+                    {"Approved – challan generated"}
                   </span>
                 </div>
               </div>
@@ -83,7 +83,7 @@ export function ContributionSubmittedSection({ v }: ViewProps) {
               <path d={"M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v5M12 8h.01"}>
               </path>
             </svg>
-            {"You will be notified once your contribution is approved."}
+            {"Pay the challan from Challans & Payments before the last day of the month."}
           </div>
           <div className="mt-4.5">
             <button onClick={v.goHome} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-7 border border-solid border-essi-green rounded-lg bg-white text-essi-green text-[15px] font-semibold">

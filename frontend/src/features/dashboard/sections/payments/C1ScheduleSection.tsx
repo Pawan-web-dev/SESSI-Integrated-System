@@ -63,7 +63,6 @@ export function C1ScheduleSection({ v }: ViewProps) {
           <div className="min-w-[220px] border-0 border-t border-solid border-ink-print pt-1.5 text-center">Signature of Employer / Authorized Person</div>
           <div className="min-w-[160px] border-0 border-t border-solid border-ink-print pt-1.5 text-center">Company Stamp</div>
         </div>
-        <div className="mt-4 font-arial text-[12px] text-[#555]">Sample schedule with dummy values; only the first workers are listed.</div>
       </DocumentSheet>
 
       <div className="mt-4 flex flex-wrap gap-2.5">

@@ -1,14 +1,12 @@
-/* Company Profile – breakdown of the Employer Identification Number (EIN). */
-import { describeEin, parseEin } from '@/services/portal';
+/* Company Profile – breakdown of the Employer Identification Number (EIN), as returned by the server. */
+import type { EinBreakdown } from '@/services/api/types';
 
-export function EmployerNumberCard({ ein }: { ein: string }) {
-  const parts = parseEin(ein);
-  const info = describeEin(ein);
-  if (!parts || !info) return null;
+export function EmployerNumberCard({ info }: { info: EinBreakdown | undefined }) {
+  if (!info) return null;
 
   const segments = [
-    { label: 'Directorate Code', code: parts.directorate, meaning: info.directorate },
-    { label: 'Industry Classification Code', code: parts.industry, meaning: info.industry },
+    { label: 'Directorate Code', code: info.directorate_code, meaning: info.directorate || '-' },
+    { label: 'Industry Classification Code', code: info.industry_code, meaning: info.industry || '-' },
     { label: 'Establishment Serial No.', code: info.serial, meaning: 'Sequential within Directorate + Industry' },
     { label: 'Branch / Sub-unit', code: info.branch || '—', meaning: info.branch ? 'Branch identifier' : 'Head office (no branch)' },
   ];
@@ -17,7 +15,7 @@ export function EmployerNumberCard({ ein }: { ein: string }) {
     <div className="mt-3.5 overflow-hidden rounded-[10px] border border-solid border-essi-line bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2.5 border-0 border-b border-solid border-b-essi-line px-4 py-3.5">
         <div className="text-[16px] font-bold text-essi-dark">Employer Identification Number</div>
-        <div className="rounded-lg bg-essi-pale px-3 py-1 font-mono text-[18px] font-bold tracking-[.05em] text-essi-dark">{ein}</div>
+        <div className="rounded-lg bg-essi-pale px-3 py-1 font-mono text-[18px] font-bold tracking-[.05em] text-essi-dark">{info.ein}</div>
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))]">
         {segments.map((s) => (

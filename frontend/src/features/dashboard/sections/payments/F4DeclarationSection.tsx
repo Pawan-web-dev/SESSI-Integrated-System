@@ -83,7 +83,6 @@ export function F4DeclarationSection({ v }: ViewProps) {
           <div className="min-w-[160px] border-0 border-t border-solid border-ink-print pt-1.5 text-center">Date</div>
           <div className="min-w-[160px] border-0 border-t border-solid border-ink-print pt-1.5 text-center">Company Stamp</div>
         </div>
-        <div className="mt-4 font-arial text-[12px] text-[#555]">Sample declaration with dummy values.</div>
       </DocumentSheet>
 
       <div className="mt-4 flex flex-wrap gap-2.5">

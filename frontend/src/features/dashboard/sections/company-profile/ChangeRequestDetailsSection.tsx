@@ -99,29 +99,6 @@ export function ChangeRequestDetailsSection({ v }: ViewProps) {
                 </div>
               </React.Fragment>))}
             </div>
-            {v.d.canAct ? (<>
-              <div className="mt-3.5 bg-[#fff8e1] border border-solid border-[#f0d78a] rounded-[10px] p-4">
-                <div className="font-bold text-[14px]">
-                  {"Demo controls: ESSI officer actions"}
-                </div>
-                <div className="text-[13px] text-[#5a4b10] mt-1 mx-0 mb-3">
-                  {"In the real system an ESSI officer does this from the admin panel, not the employer. Use these to see each status."}
-                </div>
-                <div className="flex flex-wrap gap-2.5">
-                  {v.d.canReview ? (<>
-                    <button onClick={v.dReview} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-5 rounded-lg text-[14px] font-semibold bg-white text-essi-green border border-solid border-essi-green">
-                      {"Mark Under Review"}
-                    </button>
-                  </>) : null}
-                  <button onClick={v.dApprove} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-5 rounded-lg text-[14px] font-semibold bg-essi-dark text-white border-0">
-                    {"Approve"}
-                  </button>
-                  <button onClick={v.dReject} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-5 rounded-lg text-[14px] font-semibold bg-white text-danger border border-solid border-danger">
-                    {"Reject"}
-                  </button>
-                </div>
-              </div>
-            </>) : null}
           </div>
         </>) : null}
         <div className="mt-4">

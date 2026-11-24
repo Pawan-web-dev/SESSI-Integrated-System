@@ -2,7 +2,7 @@
 import React from 'react';
 import type { Any, ViewProps } from '@/types/view';
 
-export function DashboardSidebar({ v, P }: ViewProps) {
+export function DashboardSidebar({ v }: ViewProps) {
   return (
     <>
       <aside className={`sb ${v.sbOpen} w-[270px] bg-white border-r border-r-essi-line py-4.5 px-0 box-border flex-none`}>

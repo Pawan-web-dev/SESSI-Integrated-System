@@ -1,29 +1,11 @@
 /**
- * View model for the printable payment documents:
- *  - Payment receipt   (Challans & Payments > Receipt)   – opened from "Pay Now", "View Receipt", Payment History
- *  - F-4 return form   (Challans & Payments > F-4 Form)  – opened from the print icon in the F-4 list
+ * View models for the printable payment documents, built from server data:
+ *  - Payment receipt        (Challans & Payments > Receipt)
+ *  - F-4 return, F-4 declaration and C-1 schedule (from one F-4 record)
  */
-import { printDocument } from '@/utils/print';
+import type { EmployerProfile, F4Return, Receipt } from '@/services/api/types';
+import { formatAmount, formatDate } from '@/utils/format';
 
-/** Service charges added to every challan (PKR). */
-export const SERVICE_CHARGES = 40;
-/** Monthly contribution per worker shown on the F-4 return (6% of the PKR 37,000 minimum wage). */
-export const CONTRIBUTION_RATE_TEXT = '6% of wages (minimum wage PKR 37,000)';
-
-export interface HistoryRow {
-  ch: string;
-  m: string;
-  amt: string;
-  due: string;
-  paidOn: string;
-  status: string;
-}
-export interface F4Row {
-  rc: string;
-  m: string;
-  emp: string;
-  amt: string;
-}
 export interface ContributionRow {
   n: string;
   name: string;
@@ -50,6 +32,7 @@ export interface ReceiptView {
   dueDate: string;
   billNo: string;
   transactionId: string;
+  channel: string;
 }
 
 export interface F4FormView {
@@ -62,112 +45,82 @@ export interface F4FormView {
   total: string;
   totalWords: string;
   rows: ContributionRow[];
-  /** workers not listed in the sample schedule */
+  /** workers not listed (always 0 now: the server returns every line) */
   moreWorkers: number;
 }
 
-interface BuildInput {
-  st: { rcptCh?: string; f4Id?: string };
-  sel: string;
-  paid: boolean;
-  hist: HistoryRow[];
-  f4Rows: F4Row[];
-  ccRows: ContributionRow[];
-  f4Map: Record<string, [string, number]>;
-  words: (n: number) => string;
-  fmt: (n: number) => string;
-  coName: string;
+export interface CompanyView {
+  name: string;
   empNo: string;
-  dir: string;
-  co: Record<string, string>;
-  openReceipt: (challanNo: string) => void;
-  payNow: () => void;
-  goHist: () => void;
-  goF4: () => void;
+  directorate: string;
+  address: string;
+  ntn: string;
+  industry: string;
+  person: string;
+  designation: string;
 }
 
-const toNumber = (s: string) => Number(String(s).replace(/[^0-9.]/g, '')) || 0;
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-/** "18-Nov-2026" -> "20261118" */
-const toYmd = (d: string) => {
-  const [day, mon, year] = d.split('-');
-  const m = MONTHS.indexOf(mon) + 1;
-  return m > 0 ? year + String(m).padStart(2, '0') + day.padStart(2, '0') : d.replace(/\D/g, '');
+const EMPTY_RECEIPT: ReceiptView = {
+  found: false, isPaid: false, receiptNo: '', challanNo: '', month: '', workers: '', contribution: '', serviceCharges: '', total: '', totalWords: '', paidOn: '', dueDate: '', billNo: '', transactionId: '', channel: '',
 };
+const EMPTY_F4: F4FormView = { found: false, receiptNo: '', month: '', workers: '', contribution: '', serviceCharges: '', total: '', totalWords: '', rows: [], moreWorkers: 0 };
 
-export function buildDocuments(x: BuildInput) {
-  /* ---------- receipt ---------- */
-  const latest = x.hist[0];
-  const row = x.hist.find((h) => h.ch === x.st.rcptCh) || latest;
-  let receipt: ReceiptView = {
-    found: false, isPaid: false, receiptNo: '', challanNo: '', month: '', workers: '', contribution: '', serviceCharges: '', total: '', totalWords: '', paidOn: '', dueDate: '', billNo: '', transactionId: '',
-  };
-  if (row) {
-    const total = toNumber(row.amt);
-    const [receiptNo, workers] = x.f4Map[row.m] || ['RCP-' + row.ch.slice(3), 0];
-    const paidDigits = toYmd(row.paidOn);
-    receipt = {
-      found: true,
-      isPaid: row.status === 'Paid',
-      receiptNo,
-      challanNo: row.ch,
-      month: row.m,
-      workers: String(workers || '-'),
-      contribution: x.fmt(total - SERVICE_CHARGES),
-      serviceCharges: x.fmt(SERVICE_CHARGES),
-      total: x.fmt(total),
-      totalWords: x.words(total),
-      paidOn: row.paidOn,
-      dueDate: row.due,
-      billNo: '1009801' + row.ch.replace(/\D/g, '').slice(-8),
-      transactionId: '1L-' + paidDigits + '-' + row.ch.replace(/\D/g, '').slice(-6) + ' (sample)',
-    };
-  }
-
-  /* ---------- F-4 return ---------- */
-  const f4 = x.f4Rows.find((r) => r.rc === x.st.f4Id) || x.f4Rows[0];
-  let f4Form: F4FormView = { found: false, receiptNo: '', month: '', workers: '', contribution: '', serviceCharges: '', total: '', totalWords: '', rows: [], moreWorkers: 0 };
-  if (f4) {
-    const total = toNumber(f4.amt);
-    const workers = toNumber(f4.emp);
-    f4Form = {
-      found: true,
-      receiptNo: f4.rc,
-      month: f4.m,
-      workers: f4.emp,
-      contribution: x.fmt(total - SERVICE_CHARGES),
-      serviceCharges: x.fmt(SERVICE_CHARGES),
-      total: x.fmt(total),
-      totalWords: x.words(total),
-      rows: x.ccRows,
-      moreWorkers: Math.max(0, workers - x.ccRows.length),
-    };
-  }
-
+export function receiptView(r: Receipt | undefined): ReceiptView {
+  if (!r) return EMPTY_RECEIPT;
   return {
-    isRcpt: x.sel === 'Challans & Payments|Receipt',
-    isF4Form: x.sel === 'Challans & Payments|F-4 Form',
-    isF4Decl: x.sel === 'Challans & Payments|F-4 Declaration',
-    isC1: x.sel === 'Challans & Payments|C-1 Schedule',
-    receipt,
-    f4Form,
-    company: {
-      name: x.coName,
-      empNo: x.empNo,
-      directorate: x.dir,
-      address: x.co.addr || '',
-      ntn: x.co.ntn || '',
-      industry: x.co.industry || '',
-      person: x.co.person || '',
-      designation: x.co.desig || '',
-    },
-    goPay: x.payNow,
-    goReceipt: () => (latest ? x.openReceipt(latest.ch) : undefined),
-    goHist: x.goHist,
-    goF4: x.goF4,
-    printDoc: printDocument,
+    found: true,
+    isPaid: true,
+    receiptNo: r.receipt_no,
+    challanNo: r.challan_no,
+    month: r.month,
+    workers: String(r.workers),
+    contribution: formatAmount(r.contribution),
+    serviceCharges: formatAmount(r.service_charges),
+    total: formatAmount(r.total_paid),
+    totalWords: r.total_in_words,
+    paidOn: formatDate(r.paid_at),
+    dueDate: formatDate(r.due_date),
+    billNo: '1009801' + r.challan_no.replace(/\D/g, ''),
+    transactionId: r.transaction_ref,
+    channel: r.payment_channel,
   };
 }
 
-export type DocumentsView = ReturnType<typeof buildDocuments>;
+export function f4View(f: F4Return | undefined): F4FormView {
+  if (!f) return EMPTY_F4;
+  return {
+    found: true,
+    receiptNo: f.receipt_no || '-',
+    month: f.month.toUpperCase(),
+    workers: String(f.workers),
+    contribution: formatAmount(f.contribution),
+    serviceCharges: formatAmount(f.service_charges),
+    total: formatAmount(f.total),
+    totalWords: f.total_in_words,
+    rows: f.lines.map((l, i) => ({
+      n: String(i + 1), name: l.worker_name, cnic: l.cnic, mob: l.mobile || '-', type: l.employment_type.toUpperCase(),
+      wage: formatAmount(l.wage), days: String(l.days), amt: formatAmount(l.amount),
+    })),
+    moreWorkers: 0,
+  };
+}
+
+export function companyView(p: EmployerProfile | undefined): CompanyView {
+  return {
+    name: p?.name || '',
+    empNo: p?.ein || '',
+    directorate: p?.directorate || '',
+    address: p ? `${p.address}, ${p.district}` : '',
+    ntn: p?.ntn || '',
+    industry: p?.industry || '',
+    person: p?.user_name || '',
+    designation: p?.user_designation || '',
+  };
+}
+
+/** Shape the documents part of the view model (used by Receipt, F-4, Declaration and C-1 sections). */
+export interface DocumentsView {
+  receipt: ReceiptView;
+  f4Form: F4FormView;
+  company: CompanyView;
+}

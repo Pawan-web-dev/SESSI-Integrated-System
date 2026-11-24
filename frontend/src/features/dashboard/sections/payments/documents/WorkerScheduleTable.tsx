@@ -4,7 +4,7 @@ import { DOC_TD, DOC_TH } from './DocumentParts';
 
 interface WorkerScheduleTableProps {
   rows: ContributionRow[];
-  /** workers not listed in the sample data */
+  /** workers not listed on this page */
   moreWorkers: number;
   /** show the mobile number column (C-1 schedule) */
   showMobile?: boolean;

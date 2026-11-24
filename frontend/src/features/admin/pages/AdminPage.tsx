@@ -1,24 +1,27 @@
-import { useCallback, useEffect, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { ROUTES } from '@/app/routes';
 import { PortalFooter } from '@/components/layout/PortalFooter';
 import { PortalHeader } from '@/components/layout/PortalHeader';
 import { PortalPage } from '@/components/layout/PortalPage';
 import { Alert } from '@/components/ui/Alert';
-import { endAdminSession, getAccounts, getStatus, isAdminSignedIn, getEinRegistry, type ApplicationStatus } from '@/services/portal';
+import { adminSignedOut } from '@/features/auth/authSlice';
+import { errorMessage } from '@/services/api/errors';
+import type { ApplicationStatus } from '@/services/api/types';
+import { useGetApplicationsQuery } from '../adminApi';
+import { applicationStatusChanged, messageShown, reviewClosed, reviewOpened, sectionChanged } from '../adminSlice';
 import { AdminSignInCard } from '../components/AdminSignInCard';
+import { ChangeRequestsReview } from '../components/ChangeRequestsReview';
 import { RegistrationsTable } from '../components/RegistrationsTable';
 import { ReviewApplicationModal } from '../components/ReviewApplicationModal';
 
 const TABS: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
 
-/** ESSI admin panel (#/admin): review, approve and reject employer registrations. */
+/** ESSI admin panel (#/admin): registrations (approve = issue EIN) and change requests. */
 export function AdminPage() {
-  const [signedIn, setSignedIn] = useState(isAdminSignedIn);
-  const [, setVersion] = useState(0);
-  const [message, setMessage] = useState('');
-  const [tab, setTab] = useState<ApplicationStatus>('pending');
-  const [reviewId, setReviewId] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const admin = useAppSelector((s) => s.auth.admin);
 
   useEffect(() => {
     document.title = 'Admin Panel | ESSI Sindh';
@@ -26,68 +29,77 @@ export function AdminPage() {
 
   const signOut = (e: MouseEvent) => {
     e.preventDefault();
-    endAdminSession();
-    setSignedIn(false);
+    dispatch(adminSignedOut());
   };
 
-  const applications = getAccounts().filter((a) => a.appNo);
-  const counts: Record<ApplicationStatus, number> = { pending: 0, approved: 0, rejected: 0 };
-  applications.forEach((a) => counts[getStatus(a)]++);
-  const rows = applications.filter((a) => getStatus(a) === tab);
-  const closeReview = useCallback(() => setReviewId(null), []);
+  return (
+    <PortalPage label="ESSI admin panel">
+      <PortalHeader subtitle="Admin Panel">
+        <span id="ad-who" className="hn">
+          {admin ? `Signed in as ${admin.name}` : ''}
+        </span>
+        {admin ? (
+          <a href="#" id="ad-out" onClick={signOut}>
+            Log out
+          </a>
+        ) : (
+          <Link to={ROUTES.login} id="ad-back">
+            Employer login
+          </Link>
+        )}
+      </PortalHeader>
+      <div className="wrap">{admin ? <AdminWorkspace /> : <AdminSignInCard />}</div>
+      <PortalFooter />
+    </PortalPage>
+  );
+}
+
+function AdminWorkspace() {
+  const dispatch = useAppDispatch();
+  const { section, message, applicationStatus: tab, reviewId } = useAppSelector((s) => s.admin);
+  const { data, error, isFetching } = useGetApplicationsQuery(tab, { pollingInterval: 30000, refetchOnFocus: true });
+  const closeReview = useCallback(() => dispatch(reviewClosed()), [dispatch]);
+  const setMessage = useCallback((msg: string) => dispatch(messageShown(msg)), [dispatch]);
 
   return (
-    <PortalPage
-      label="ESSI admin panel"
-      modals={
-        <ReviewApplicationModal
-          applicationId={reviewId}
-          onClose={closeReview}
-          onChanged={(msg, switchTo) => {
-            if (switchTo) {
-              setReviewId(null);
-              setTab(switchTo);
-            }
-            if (msg) setMessage(msg);
-            setVersion((n) => n + 1);
-          }}
-        />
-      }
-    >
-      <PortalHeader subtitle="Admin Panel (Demo)">
-        <span id="ad-who" className="hn">
-          {signedIn ? 'Signed in as admin' : ''}
+    <div className="card" id="ad-panel">
+      <div className="row">
+        <h1>{section === 'registrations' ? 'Employer registrations' : 'Change requests'}</h1>
+        <span className="flex gap-2">
+          <button className={`btn ${section === 'registrations' ? '' : 'ghost'} min-h-[40px]`} onClick={() => dispatch(sectionChanged('registrations'))}>
+            Registrations
+          </button>
+          <button className={`btn ${section === 'changes' ? '' : 'ghost'} min-h-[40px]`} onClick={() => dispatch(sectionChanged('changes'))}>
+            Change requests
+          </button>
         </span>
-        <a href="#" id="ad-out" style={{ display: signedIn ? undefined : 'none' }} onClick={signOut}>
-          Log out
-        </a>
-        <Link to={ROUTES.login} id="ad-back" style={{ display: signedIn ? 'none' : undefined }}>
-          Employer login
-        </Link>
-      </PortalHeader>
-      <div className="wrap">
-        <AdminSignInCard hidden={signedIn} onSignedIn={() => setSignedIn(true)} />
-        <div className="card" id="ad-panel" style={{ display: signedIn ? undefined : 'none' }}>
-          <div className="row">
-            <h1>Employer registrations</h1>
-            <span className="text-[14px] text-ink-soft">
-              Employer Nos. issued: <b id="ad-next">{getEinRegistry().length}</b> · format <b>DDD-II-NNNNNN</b>
-            </span>
-          </div>
-          <Alert kind="success" id="ad-ok" message={message} />
+      </div>
+      <Alert kind="success" id="ad-ok" message={message} />
+      {section === 'changes' ? (
+        <ChangeRequestsReview onMessage={setMessage} />
+      ) : (
+        <>
           <div id="ad-tabs" className="flex gap-2 flex-wrap my-4 mx-0">
             {TABS.map((k) => (
-              <button key={k} className={`btn ${k === tab ? '' : 'ghost'} min-h-[40px]`} onClick={() => setTab(k)}>
-                {k.charAt(0).toUpperCase() + k.slice(1) + ' (' + counts[k] + ')'}
+              <button key={k} className={`btn ${k === tab ? '' : 'ghost'} min-h-[40px]`} onClick={() => dispatch(applicationStatusChanged(k))}>
+                {k.charAt(0).toUpperCase() + k.slice(1) + ' (' + (data?.counts[k] ?? 0) + ')'}
               </button>
             ))}
           </div>
+          <Alert kind="error" message={error ? errorMessage(error) : ''} />
           <div className="overflow-x-auto">
-            <RegistrationsTable tab={tab} rows={rows} onReview={setReviewId} />
+            {data || !isFetching ? <RegistrationsTable tab={tab} rows={data?.items ?? []} onReview={(id) => dispatch(reviewOpened(id))} /> : <p className="text-ink-muted">Loading…</p>}
           </div>
-        </div>
-      </div>
-      <PortalFooter />
-    </PortalPage>
+          <ReviewApplicationModal
+            applicationId={reviewId}
+            onClose={closeReview}
+            onChanged={(msg, switchTo) => {
+              if (switchTo) dispatch(reviewClosed({ message: msg, switchTo }));
+              else if (msg) setMessage(msg);
+            }}
+          />
+        </>
+      )}
+    </div>
   );
 }

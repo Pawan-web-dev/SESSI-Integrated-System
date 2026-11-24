@@ -27,15 +27,7 @@ export function VerifyContactStep({ v }: ViewProps) {
           <b>
             {v.v_ae}
           </b>
-          {". Codes expire in 10 minutes. Demo codes: SMS "}
-          <b>
-            {"123456"}
-          </b>
-          {", email "}
-          <b>
-            {"654321"}
-          </b>
-          {"."}
+          {". The codes are valid for 10 minutes."}
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-y-4.5 gap-x-7">
           <div className="flex flex-col gap-1.5 text-[14px]">
@@ -79,7 +71,7 @@ export function VerifyContactStep({ v }: ViewProps) {
             </svg>
             {"Back"}
           </button>
-          <button onClick={v.next} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
+          <button onClick={v.next} disabled={v.busy} className="inline-flex items-center gap-2 min-h-[44px] py-0 px-6 rounded-lg text-[15px] font-semibold bg-essi-dark text-white border-0">
             <svg width={"20"} height={"20"} viewBox={"0 0 24 24"} fill={"none"} stroke={"currentColor"} strokeWidth={"2"} strokeLinecap={"round"} strokeLinejoin={"round"} aria-hidden={"true"} className="flex-none">
               <path d={"M5 12h14M13 6l6 6-6 6"}>
               </path>

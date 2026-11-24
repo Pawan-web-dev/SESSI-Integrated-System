@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
-import { changePassword, findAccountByLoginId, RESET_CODE, type Account } from '@/services/portal';
-import { digitsOnly } from '@/utils/format';
+import { errorMessage } from '@/services/api/errors';
+import { useConfirmPasswordResetMutation, useRequestPasswordResetMutation } from '../authApi';
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -17,7 +17,9 @@ interface ForgotPasswordModalProps {
 export function ForgotPasswordModal({ open, initialLoginId, onClose, onPasswordChanged }: ForgotPasswordModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [loginId, setLoginId] = useState('');
-  const [account, setAccount] = useState<Account | null>(null);
+  const [sentTo, setSentTo] = useState('');
+  const [requestReset, { isLoading: sending }] = useRequestPasswordResetMutation();
+  const [confirmReset, { isLoading: saving }] = useConfirmPasswordResetMutation();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -28,7 +30,7 @@ export function ForgotPasswordModal({ open, initialLoginId, onClose, onPasswordC
   useEffect(() => {
     if (!open) return;
     setStep(1);
-    setAccount(null);
+    setSentTo('');
     setError('');
     setLoginId(initialLoginId);
     setTimeout(() => loginIdRef.current?.focus(), 0);
@@ -36,27 +38,34 @@ export function ForgotPasswordModal({ open, initialLoginId, onClose, onPasswordC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const sendCode = () => {
-    const a = findAccountByLoginId(loginId);
-    if (!a) return setError('No account found for that login ID.');
-    setAccount(a);
-    setError('');
-    setStep(2);
-    setTimeout(() => codeRef.current?.focus(), 0);
+  const sendCode = async () => {
+    if (!loginId.trim()) return setError('Enter your login ID.');
+    try {
+      const res = await requestReset({ login_id: loginId.trim() }).unwrap();
+      setSentTo(res.sent_to);
+      setError('');
+      setStep(2);
+      setTimeout(() => codeRef.current?.focus(), 0);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   };
 
-  const save = () => {
-    if (code.trim() !== RESET_CODE) return setError('The code is incorrect.');
+  const save = async () => {
+    if (!/^\d{6}$/.test(code.trim())) return setError('Enter the 6-digit code.');
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) return setError('Password needs at least 8 characters, one capital letter and one number.');
     if (password !== confirm) return setError('Passwords do not match.');
-    if (account) changePassword(account.id, password);
-    setCode('');
-    setPassword('');
-    setConfirm('');
-    onPasswordChanged();
+    try {
+      await confirmReset({ login_id: loginId.trim(), code: code.trim(), new_password: password }).unwrap();
+      setCode('');
+      setPassword('');
+      setConfirm('');
+      onPasswordChanged();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   };
 
-  const mobile = account ? digitsOnly(account.mobile) : '';
   return (
     <Modal open={open} onClose={onClose} labelledBy="fp-t">
       <h1 id="fp-t" className="text-[20px]">
@@ -73,13 +82,13 @@ export function ForgotPasswordModal({ open, initialLoginId, onClose, onPasswordC
           <button className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn" onClick={sendCode}>
-            Send code
+          <button className="btn" disabled={sending} onClick={() => void sendCode()}>
+            {sending ? 'Sending…' : 'Send code'}
           </button>
         </div>
       </div>
       <div style={{ display: step === 2 ? undefined : 'none' }}>
-        <div className="ok on">{'Code sent to ' + mobile.slice(0, 4) + '-XXX' + mobile.slice(-4) + '. Demo code: ' + RESET_CODE}</div>
+        <div className="ok on">{'A 6-digit code was sent to ' + sentTo + ' and your registered e-mail. It is valid for 10 minutes.'}</div>
         <div className="f">
           <label htmlFor="fp-code">6-digit code</label>
           <input ref={codeRef} className="inp" id="fp-code" maxLength={6} autoComplete="off" value={code} onChange={(e) => setCode(e.target.value)} />
@@ -96,8 +105,8 @@ export function ForgotPasswordModal({ open, initialLoginId, onClose, onPasswordC
           <button className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn" onClick={save}>
-            Change password
+          <button className="btn" disabled={saving} onClick={() => void save()}>
+            {saving ? 'Saving…' : 'Change password'}
           </button>
         </div>
       </div>

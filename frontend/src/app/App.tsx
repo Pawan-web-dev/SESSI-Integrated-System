@@ -1,7 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { DocumentViewer } from '@/components/shared/DocumentViewer';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { getSessionAccount } from '@/services/portal';
+import { useAppSelector } from './hooks';
 import { ROUTES } from './routes';
 
 // Larger pages are loaded on demand so the login page opens quickly.
@@ -13,10 +14,11 @@ const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPag
 
 /** Application routes. A signed-in employer opening "/" goes straight to the dashboard. */
 export default function App() {
+  const signedIn = useAppSelector((s) => !!s.auth.employer);
   return (
     <Suspense fallback={null}>
       <Routes>
-        <Route path={ROUTES.home} element={getSessionAccount() ? <Navigate to={ROUTES.dashboard} replace /> : <LoginPage />} />
+        <Route path={ROUTES.home} element={signedIn ? <Navigate to={ROUTES.dashboard} replace /> : <LoginPage />} />
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.register} element={<RegisterPage />} />
         <Route path={ROUTES.applicationSubmitted} element={<ApplicationSubmittedPage />} />
@@ -25,6 +27,8 @@ export default function App() {
         <Route path={ROUTES.dashboard} element={<DashboardPage />} />
         <Route path="*" element={<Navigate to={ROUTES.login} replace />} />
       </Routes>
+      {/* uploaded documents open here, over any page */}
+      <DocumentViewer />
     </Suspense>
   );
 }
