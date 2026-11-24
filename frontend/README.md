@@ -22,7 +22,7 @@ admin `admin` / `Admin@2026`. Registration OTP codes: SMS `123456`, email `65432
 | `#/register`  | Registration wizard (account → verify → 4 steps) | `src/features/registration` |
 | `#/welcome`   | Application submitted + live tracking        | `src/features/registration`    |
 | `#/inbox`     | Demo SMS / email inbox                       | `src/features/inbox`           |
-| `#/admin`     | ESSI admin workspace: companies, document approvals, change requests, challans | `src/features/admin`           |
+| `#/admin`     | ESSI admin: review, approve, reject          | `src/features/admin`           |
 | `#/dashboard` | Employer dashboard (all sidebar modules)     | `src/features/dashboard`       |
 
 ## Folder structure

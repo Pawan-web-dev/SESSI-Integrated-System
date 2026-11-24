@@ -59,17 +59,7 @@ export interface Account {
   dir: string;
   workers?: string;
   docs?: number;
-  /** files uploaded with the application, by document key (optional; demo seeds have none) */
-  uploadedDocs?: Record<string, StoredDocument>;
   co: Company;
-}
-
-/** A document file kept with an application (data URL, demo storage only). */
-export interface StoredDocument {
-  name: string;
-  size: number;
-  type: string;
-  dataUrl: string;
 }
 
 /** A message ESSI would send by SMS and email (shown in the demo inbox). */

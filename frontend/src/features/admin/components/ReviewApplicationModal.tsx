@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ApplicationTimeline } from '@/components/shared/ApplicationTimeline';
 import { Alert } from '@/components/ui/Alert';
 import { Modal } from '@/components/ui/Modal';
-import { DocumentViewerModal } from './DocumentViewerModal';
 import {
-  approveApplication, COMPANY_DOCUMENTS, completedStages, expectedEmployerNo, findIndustry, getAccountById, getStatus, postProgressUpdate, rejectApplication, type Account, type ApplicationStatus,
+  approveApplication, completedStages, expectedEmployerNo, findIndustry, getAccountById, getStatus, postProgressUpdate, rejectApplication, type Account, type ApplicationStatus,
 } from '@/services/portal';
 
 const BOX_CLASSES = 'max-w-[640px] max-h-[92vh] overflow-auto';
@@ -25,7 +24,6 @@ export function ReviewApplicationModal({ applicationId, onClose, onChanged }: Re
   const [error, setError] = useState('');
   const [stage, setStage] = useState('2');
   const [note, setNote] = useState('');
-  const [viewDoc, setViewDoc] = useState<string | null>(null);
   const reasonRef = useRef<HTMLInputElement>(null);
   const application = getAccountById(applicationId);
 
@@ -35,7 +33,6 @@ export function ReviewApplicationModal({ applicationId, onClose, onChanged }: Re
     setError('');
     setReason('');
     setNote('');
-    setViewDoc(null);
     const a = getAccountById(applicationId);
     setStage(a && completedStages(a) >= 2 ? '3' : '2');
   }, [applicationId]);
@@ -75,30 +72,12 @@ export function ReviewApplicationModal({ applicationId, onClose, onChanged }: Re
   };
 
   return (
-    <>
     <Modal open={!!applicationId} onClose={onClose} labelledBy="rv-t" boxClassName={BOX_CLASSES}>
       <h1 id="rv-t" className="text-[20px]">
         Review application
       </h1>
       <div id="rv-body">
         <ApplicationDetails application={application} />
-        <h3 className="text-[15px] mt-4 mx-0 mb-2 text-[#10331d]">Uploaded company documents</h3>
-        {COMPANY_DOCUMENTS.map(([key, label, required]) => {
-          const d = application.uploadedDocs?.[key];
-          return (
-            <div key={key} className="admin-doc-row">
-              <div className="min-w-0">
-                <b>{label}</b> <small className="admin-muted">{required ? 'Required' : 'Optional'}</small>
-                <br />
-                <small className="admin-muted break-all">{d ? d.name + ' (' + Math.max(1, Math.ceil(d.size / 1024)) + ' KB)' : 'demo copy'}</small>
-              </div>
-              <button type="button" className="btn ghost py-1.5 px-3.5 text-[13px] min-h-0" onClick={() => setViewDoc(key)}>
-                View
-              </button>
-            </div>
-          );
-        })}
-        <p className="admin-muted text-[12px] mt-2">Documents marked "demo copy" have no stored file; View shows a sample placeholder.</p>
         {getStatus(application) === 'pending' ? (
           <div className="mt-3.5 p-3 border border-solid border-essi-line rounded-[10px] bg-[#f6fbf8]">
             <b className="text-[14px]">Post a progress update</b>
@@ -132,20 +111,14 @@ export function ReviewApplicationModal({ applicationId, onClose, onChanged }: Re
         <button className="btn ghost" onClick={onClose}>
           Close
         </button>
-        {getStatus(application) === 'pending' ? (
-          <>
-            <button className="btn bg-danger" onClick={reject}>
-              Reject
-            </button>
-            <button className="btn" onClick={approve}>
-              Approve &amp; assign Employer No.
-            </button>
-          </>
-        ) : null}
+        <button className="btn bg-danger" onClick={reject}>
+          Reject
+        </button>
+        <button className="btn" onClick={approve}>
+          Approve &amp; assign Employer No.
+        </button>
       </div>
     </Modal>
-    <DocumentViewerModal application={application} docKey={viewDoc} onClose={() => setViewDoc(null)} />
-    </>
   );
 }
 
