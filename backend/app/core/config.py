@@ -1,7 +1,7 @@
 """Application settings, read from environment variables or backend/.env."""
 from functools import lru_cache
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEV_JWT_SECRET = 'dev-only-secret-do-not-use-in-production-0001'
@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     upload_dir: str = './storage/uploads'
     max_upload_mb: int = 5
 
+    @field_validator('database_url')
+    @classmethod
+    def _use_psycopg_driver(cls, value: str) -> str:
+        """Accept the connection string as Neon / other hosts show it (postgresql://… or postgres://…)."""
+        value = value.strip()
+        for prefix in ('postgres://', 'postgresql://'):
+            if value.startswith(prefix):
+                return 'postgresql+psycopg://' + value[len(prefix):]
+        return value
+
     @model_validator(mode='after')
     def _production_safety(self) -> 'Settings':
         if self.environment == 'production':
@@ -96,6 +106,11 @@ class Settings(BaseSettings):
     @property
     def sms_enabled(self) -> bool:
         return bool(self.sms_api_url)
+
+    @property
+    def is_pooled_postgres(self) -> bool:
+        """Neon's pooled endpoint (host contains "-pooler") runs PgBouncer."""
+        return '-pooler.' in self.database_url
 
     @property
     def is_sqlite(self) -> bool:

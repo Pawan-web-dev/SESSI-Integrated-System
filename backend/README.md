@@ -43,7 +43,7 @@ Restart the API after changing it.
 | Group | Variables | Notes |
 | --- | --- | --- |
 | General | `ENVIRONMENT`, `FRONTEND_URL`, `CORS_ORIGINS`, `DEMO_MODE` | `DEMO_MODE=false` in production |
-| Database | `DATABASE_URL` | SQLite file locally, PostgreSQL on the server |
+| Database | `DATABASE_URL` | Neon PostgreSQL (paste the connection string as Neon shows it), or `sqlite:///./sessi.db` for offline work |
 | Sign-in | `JWT_SECRET`, `ACCESS_TOKEN_MINUTES` | long random secret |
 | First admin | `ADMIN_USERNAME`, `ADMIN_NAME`, `ADMIN_PASSWORD` | created at start-up when no admin exists; then clear the password |
 | E-mail | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_USE_TLS` | empty host = outbox only |
@@ -55,6 +55,14 @@ Restart the API after changing it.
 Every SMS / e-mail is first written to `outbox_messages`. When SMTP or the SMS gateway is set, a background
 worker sends queued messages and records `sms_status` / `email_status` (`sent`, `failed` after the last retry)
 and `last_error`.
+
+## Database on Neon
+
+The database is hosted on [Neon](https://console.neon.tech) (PostgreSQL). `DATABASE_URL` in `.env` holds the
+connection string from Neon's *Connect* button – the pooled one (host contains `-pooler`) is fine for the app and
+for migrations. After pulling new code run `alembic upgrade head` once; it updates the tables on Neon.
+Neon pauses an idle database: the first request after a pause takes a second or two, the app reconnects by itself.
+The tests never touch Neon – they use their own temporary SQLite database.
 
 ## Registration documents
 

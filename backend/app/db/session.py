@@ -8,11 +8,20 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={'check_same_thread': False} if settings.is_sqlite else {},
-    pool_pre_ping=not settings.is_sqlite,
-)
+if settings.is_sqlite:
+    engine = create_engine(settings.database_url, connect_args={'check_same_thread': False})
+else:
+    # PostgreSQL (e.g. Neon). Neon suspends an idle database and closes its connections, so connections are
+    # checked before use and renewed every 5 minutes. On the pooled endpoint (PgBouncer) psycopg must not
+    # create server-side prepared statements.
+    engine = create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        pool_size=5,
+        max_overflow=5,
+        connect_args={'prepare_threshold': None} if settings.is_pooled_postgres else {},
+    )
 
 if settings.is_sqlite:
 
