@@ -1,0 +1,38 @@
+/* Admin workspace (sidebar, KPI cards, tables, date picker). Copied from the design; scoped to .portal */
+.portal .admin-shell{display:grid;grid-template-columns:245px minmax(0,1fr);gap:20px;align-items:start}
+.portal .admin-side{background:#f4fbf6;border:1px solid #cfe4d5;border-radius:14px;padding:14px;position:sticky;top:12px}
+.portal .admin-brand{font-weight:800;color:#0b4d24;padding:8px 10px 14px;border-bottom:1px solid #d8e9dd;margin-bottom:10px}
+.portal .admin-nav{display:flex;flex-direction:column;gap:6px}
+.portal .admin-nav button{border:0;background:transparent;color:#244a31;text-align:left;padding:12px;border-radius:8px;font-weight:650;font-size:14px}
+.portal .admin-nav button.active,.portal .admin-nav button:hover{background:#0b4d24;color:#fff}
+.portal .admin-main{min-width:0}
+.portal .admin-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.portal .admin-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.portal .admin-kpi{border:1px solid #d4e6d9;border-radius:12px;padding:16px;background:#fff}
+.portal .admin-kpi small{color:#607568;font-size:12px}
+.portal .admin-kpi strong{display:block;font-size:25px;color:#0b4d24;margin-top:5px}
+.portal .admin-table-wrap{overflow:auto;border:1px solid #d6e6da;border-radius:10px}
+.portal .admin-table{width:100%;border-collapse:collapse;min-width:760px;font-size:13px}
+.portal .admin-table th,.portal .admin-table td{padding:12px;border-bottom:1px solid #e5eee7;text-align:left;vertical-align:middle}
+.portal .admin-table th{background:#edf6ef;color:#244a31;white-space:nowrap}
+.portal .admin-table tr:last-child td{border-bottom:0}
+.portal .admin-pill{display:inline-block;padding:4px 9px;border-radius:20px;background:#e5f4e9;color:#176332;font-size:11px;font-weight:700}
+.portal .admin-pill.pending{background:#fff2d5;color:#8a5a00}
+.portal .admin-pill.rejected{background:#fde8e7;color:#a52a2a}
+.portal .admin-pill.review{background:#e7f0fb;color:#205d91}
+.portal .admin-action{min-height:34px;padding:0 12px;font-size:12px;margin:2px}
+.portal .admin-muted{color:#64766b;font-size:13px}
+.portal .admin-filter{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;align-items:center}
+.portal .admin-filter input,.portal .admin-filter select{max-width:260px;min-height:40px}
+.portal .admin-detail{background:#f5faf6;border:1px solid #d6e6da;border-radius:10px;padding:14px;margin:12px 0}
+.portal .admin-pop{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:330px;max-width:92vw;background:#fff;border:1px solid #cfe4d5;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:14px}
+.portal .admin-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}
+.portal .admin-cal .wd{color:#4d6654;font-size:11px;padding:4px 0}
+.portal .admin-cal button{border:0;border-radius:8px;padding:7px 0;cursor:pointer;position:relative;background:transparent;color:#10331d}
+.portal .admin-cal button:hover{background:#e8f6ec}
+.portal .admin-cal button.sel{background:#0b4d24;color:#fff}
+.portal .admin-cal button i{position:absolute;left:50%;bottom:2px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#e0a100}
+.portal .admin-cal button.sel i{background:#fff}
+.portal .admin-doc-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 0;border-bottom:1px solid #e4eee7;flex-wrap:wrap}
+@media(max-width:900px){.portal .admin-shell{grid-template-columns:1fr}.portal .admin-side{position:static}.portal .admin-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.portal .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.portal .admin-kpis{grid-template-columns:1fr 1fr}}
