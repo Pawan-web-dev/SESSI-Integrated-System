@@ -1,7 +1,7 @@
 /**
  * Scans a Family Registration Certificate completely offline:
- *   1. OCR (Tesseract) reads the text at normal size; only when that pass misses a name or CNIC is the
- *      page read again enlarged, and the two passes fill each other's gaps. Pages are read in parallel;
+ *   1. OCR (Tesseract) reads every page three times (normal size, enlarged, high contrast) and the passes fill each
+ *      other's gaps. The passes and pages run in parallel on the OCR workers;
  *   2. the layout parser turns the words into people (name, CNIC, date of birth, relationship);
  *   3. a face detector (MediaPipe BlazeFace) finds each person's photo, which is cropped to a 200x200 JPEG.
  */
@@ -42,14 +42,6 @@ export interface FrcScan {
 export function warmUpScanner(): void {
   warmUpOcr();
   warmUpFaces();
-}
-
-/**
- * Did a pass read a name and CNIC on every card (so a second, slower pass is not worth it)? A missing date of birth
- * alone does not trigger it: the user checks and corrects every row before saving anyway.
- */
-function complete(found: FrcCards): boolean {
-  return found.cards.length > 0 && found.cards.every((c) => !!(c.name && c.cnic));
 }
 
 export type ScanProgress = (message: string, percent: number) => void;
@@ -109,24 +101,26 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
   onProgress('Opening the file…', 2);
   const pages = await loadPages(file);
 
-  // progress: every page counts the same; the first pass of a page is 0..0.9 of it and a second pass, if needed, the rest
-  const pageProgress = pages.map(() => 0);
-  const report = (label: string) => onProgress(label, Math.round(5 + (pageProgress.reduce((a, b) => a + b, 0) / pages.length) * 70));
-  const label = (i: number, extra = '') => (pages.length > 1 ? `Reading page ${i + 1} of ${pages.length}` : 'Reading the certificate') + extra + '…';
+  // Every page is always read three times (normal size, enlarged, high contrast). The passes run side by side on
+  // the OCR workers and are merged, so each fills what the others misread. Nothing is shown until all are done.
+  const PASSES = 3;
+  const done = pages.map(() => new Array<number>(PASSES).fill(0));
+  const report = () => {
+    const all = done.flat();
+    const fraction = all.reduce((a, b) => a + b, 0) / all.length;
+    const finished = all.filter((f) => f >= 1).length;
+    onProgress(`Reading the certificate carefully (pass ${Math.min(finished + 1, all.length)} of ${all.length})…`, Math.round(5 + fraction * 75));
+  };
+  const pass = (i: number, n: number, image: HTMLCanvasElement) =>
+    recognizeWords(image, (f) => { done[i][n] = f; report(); }).then((words) => { done[i][n] = 1; report(); return words; });
 
   const readPage = async (i: number): Promise<FrcCards> => {
-    const normal = extractCards(await recognizeWords(pages[i].base, (f) => { pageProgress[i] = f * 0.9; report(label(i)); }));
-    if (complete(normal)) {
-      pageProgress[i] = 1;
-      report(label(i));
-      return normal;
-    }
-    // something was missed: read the enlarged page too (coordinates scaled back so both passes agree)
-    const k = pages[i].big.width / pages[i].base.width;
-    const words = await recognizeWords(pages[i].big, (f) => { pageProgress[i] = 0.9 + f * 0.1; report(label(i, ' (closer look)')); });
-    const enlarged = extractCards(words.map((w) => ({ ...w, x0: w.x0 / k, y0: w.y0 / k, x1: w.x1 / k, y1: w.y1 / k })));
-    pageProgress[i] = 1;
-    return mergeCards([enlarged, normal]);
+    const p = pages[i];
+    const k = p.big.width / p.base.width;
+    const [normal, enlarged, sharp] = await Promise.all([pass(i, 0, p.base), pass(i, 1, p.big), pass(i, 2, p.sharp)]);
+    // coordinates of the enlarged pass are scaled back so all passes agree; the enlarged pass reads small print best
+    const big = enlarged.map((w) => ({ ...w, x0: w.x0 / k, y0: w.y0 / k, x1: w.x1 / k, y1: w.y1 / k }));
+    return mergeCards([extractCards(big), extractCards(normal), extractCards(sharp)]);
   };
 
   const cardsByPage = await Promise.all(pages.map((_, i) => readPage(i)));
@@ -141,7 +135,7 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
   const people = [result.applicant, ...result.members];
   const photos = new Map<FrcPerson, string>();
   let photosDone = 0;
-  onProgress('Finding photos…', 78);
+  onProgress('Finding photos…', 80);
   await Promise.all(people.map(async (person) => {
     const pageIndex = pageOf.get(person) ?? 0;
     try {
@@ -151,7 +145,7 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
       /* no photo for this person; the rest of the scan still works */
     }
     photosDone++;
-    onProgress(`Finding photos (${photosDone} of ${people.length})…`, 78 + Math.round((photosDone / people.length) * 20));
+    onProgress(`Finding photos (${photosDone} of ${people.length})…`, 80 + Math.round((photosDone / people.length) * 18));
   }));
 
   const a = result.applicant;

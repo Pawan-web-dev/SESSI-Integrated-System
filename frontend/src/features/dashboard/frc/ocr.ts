@@ -15,8 +15,9 @@ interface PoolWorker {
   progress: (fraction: number) => void;
 }
 
-/** Two workers on machines with 4+ cores (each is one CPU core and ~60 MB of memory), otherwise one. */
-const POOL_SIZE = typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 2) >= 4 ? 2 : 1;
+/** One worker per pass (3) on machines with 8+ cores, two with 4+, otherwise one. Each uses one CPU core and ~60 MB. */
+const CORES = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2;
+const POOL_SIZE = CORES >= 8 ? 3 : CORES >= 4 ? 2 : 1;
 const pool: PoolWorker[] = [];
 const waiting: ((w: PoolWorker) => void)[] = [];
 

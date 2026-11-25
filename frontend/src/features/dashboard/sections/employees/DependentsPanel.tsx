@@ -96,7 +96,7 @@ export function DependentsPanel({
           'Found ' + scanned.length + ' family member(s)' + (result.photosFound ? ' and ' + result.photosFound + ' photo(s)' : '') + '. ' +
           (gaps ? gaps + ' value(s) could not be read and are highlighted. ' : '') +
           (a && !a.gender ? 'Select the gender yourself. ' : '') +
-          'Check every value against the certificate and correct anything misread before saving.',
+          'Scan complete: check every value against the certificate, correct anything misread and fill in what is missing, then click Save.',
       );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'The certificate could not be read.');
@@ -147,6 +147,9 @@ export function DependentsPanel({
           </div>
           <div className="h-2 rounded bg-essi-mint overflow-hidden">
             <div className="h-full bg-essi-green transition-[width] duration-300" style={{ width: scanning.percent + '%' }} />
+          </div>
+          <div className="text-[11px] text-ink-muted mt-1.5">
+            The certificate is read three times so that as many details as possible are found. When it finishes, every value below can be checked and edited.
           </div>
         </div>
       ) : null}

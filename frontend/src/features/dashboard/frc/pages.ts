@@ -1,10 +1,12 @@
 /** Turns an uploaded FRC (image or PDF) into canvases the scanner can work on. */
 
 export interface PageImages {
-  /** page at normal size (used for the first OCR pass) */
+  /** page at normal size (first OCR pass) */
   base: HTMLCanvasElement;
-  /** enlarged page (up to 2x; second OCR pass when the first missed something, and the source of the person photos) */
+  /** enlarged page (up to 2x; second OCR pass, and the source of the person photos) */
   big: HTMLCanvasElement;
+  /** grey-scale, contrast-stretched copy of the page (third OCR pass: helps with faint or uneven phone photos) */
+  sharp: HTMLCanvasElement;
 }
 
 const MAX_BASE_WIDTH = 1700;
@@ -29,9 +31,39 @@ function scaled(src: HTMLCanvasElement, factor: number): HTMLCanvasElement {
   return c;
 }
 
+/** Grey-scale copy with the darkest 2% made black and the lightest 2% white, so faint print stands out. */
+function contrasted(src: HTMLCanvasElement): HTMLCanvasElement {
+  const c = canvasOf(src.width, src.height);
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(src, 0, 0);
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < d.length; i += 4) {
+    const g = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+    d[i] = g;
+    hist[g]++;
+  }
+  const total = d.length / 4;
+  const cut = total * 0.02;
+  let lo = 0;
+  let below = hist[0];
+  while (lo < 254 && below < cut) below += hist[++lo];
+  let hi = 255;
+  let above = hist[255];
+  while (hi > lo + 1 && above < cut) above += hist[--hi];
+  const span = Math.max(1, hi - lo);
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.max(0, Math.min(255, ((d[i] - lo) * 255) / span));
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
 function toPage(source: HTMLCanvasElement): PageImages {
   const base = source.width > MAX_BASE_WIDTH ? scaled(source, MAX_BASE_WIDTH / source.width) : source;
-  return { base, big: scaled(base, Math.min(2, MAX_BIG_WIDTH / base.width)) };
+  return { base, big: scaled(base, Math.min(2, MAX_BIG_WIDTH / base.width)), sharp: contrasted(base) };
 }
 
 async function imagePage(file: File): Promise<PageImages[]> {

@@ -636,7 +636,7 @@ export function useDashboardModel() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, employees, contributions, changes, notifications, documentsQ.data, industriesQ.data, previewQ.data, previewQ.error, receiptQ.data, f4Q.data, f5ReceiptQ.data,
-      sel, open, menuOpen, userMenu, form, editId, formErr, savedMsg, panel, pw, pwErr, pwDone, crForm, crErr, crMsg, viewCrId, doneInfo, busy, thisMonthDone, month]);
+      sel, open, menuOpen, userMenu, form, deps, editId, formErr, savedMsg, panel, pw, pwErr, pwDone, crForm, crErr, crMsg, viewCrId, doneInfo, busy, thisMonthDone, month]);
 
   const env: ViewEnv = {
     coName: profile?.name || '', empNo: profile?.ein || '', person: profile?.contact_person || '', dir: profile?.directorate || '',
