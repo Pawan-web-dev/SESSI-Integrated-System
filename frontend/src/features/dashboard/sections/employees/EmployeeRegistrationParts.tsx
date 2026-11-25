@@ -1,5 +1,6 @@
 /* Building blocks of the Employee Registration screen. */
 import { useState, type ReactNode } from 'react';
+import { resizePhoto } from '../../logic/photo';
 
 export type UploadMethod = 'excel' | 'csv' | 'api' | 'manual';
 
@@ -88,6 +89,8 @@ interface Dependent {
   relationship: string;
   cnic: string;
   dob: string;
+  /** 200x200 JPEG data URL, added with the photo button */
+  photo?: string;
 }
 
 /** Demo dependents for a CNIC (the NADRA family tree is not connected, so these are sample records). */
@@ -111,6 +114,13 @@ export function DependentsPanel({ cnic }: { cnic: string }) {
   const [list, setList] = useState<Dependent[]>([]);
   const [source, setSource] = useState('');
   const [message, setMessage] = useState('');
+  const setPhoto = (index: number, photo: string | undefined) => setList((l) => l.map((d, i) => (i === index ? { ...d, photo } : d)));
+  const pickPhoto = (index: number, file: File | undefined) => {
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return setMessage('Dependent photo must be a JPG, PNG or WebP image.');
+    if (file.size > 5 * 1024 * 1024) return setMessage('The photo is larger than 5 MB.');
+    resizePhoto(file, (url) => { setPhoto(index, url); setMessage(''); }, setMessage);
+  };
   const validCnic = cnic.replace(/\D/g, '').length === 13;
 
   const fetchNadra = () => {
@@ -170,7 +180,7 @@ export function DependentsPanel({ cnic }: { cnic: string }) {
         <table className="w-full border-collapse text-[13px] min-w-[480px]">
           <thead>
             <tr className="bg-[#f1f7f4] text-left">
-              {['#', 'Name', 'Relationship', 'CNIC', 'Date of Birth'].map((h) => (
+              {['#', 'Photo', 'Name', 'Relationship', 'CNIC', 'Date of Birth'].map((h) => (
                 <th key={h} className="py-2 px-3 font-semibold border-b border-solid border-essi-line">
                   {h}
                 </th>
@@ -182,6 +192,30 @@ export function DependentsPanel({ cnic }: { cnic: string }) {
               list.map((d, i) => (
                 <tr key={d.name}>
                   <td className="py-2 px-3 border-b border-solid border-essi-line">{i + 1}</td>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line">
+                    <div className="flex items-center gap-2">
+                      {d.photo ? (
+                        <img src={d.photo} alt={'Photo of ' + d.name} width="40" height="40" className="w-10 h-10 rounded-full object-cover border border-solid border-essi-green" />
+                      ) : (
+                        <svg width="40" height="40" viewBox="0 0 44 44" aria-hidden="true" className="rounded-full flex-none">
+                          <rect width="44" height="44" fill="#d9d9d9" />
+                          <circle cx="22" cy="17" r="8" fill="#fff" />
+                          <path d="M6 44c0-10 7-14 16-14s16 4 16 14z" fill="#fff" />
+                        </svg>
+                      )}
+                      <div className="flex flex-col items-start gap-0.5">
+                        <label className="text-essi-green font-semibold underline cursor-pointer text-[12px]">
+                          {d.photo ? 'Change' : 'Upload'}
+                          <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { pickPhoto(i, e.target.files?.[0]); e.target.value = ''; }} />
+                        </label>
+                        {d.photo ? (
+                          <button type="button" onClick={() => setPhoto(i, undefined)} className="bg-transparent border-0 p-0 text-danger text-[12px] cursor-pointer">
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
                   <td className="py-2 px-3 border-b border-solid border-essi-line">{d.name}</td>
                   <td className="py-2 px-3 border-b border-solid border-essi-line">{d.relationship}</td>
                   <td className="py-2 px-3 border-b border-solid border-essi-line whitespace-nowrap">{d.cnic}</td>
@@ -190,10 +224,10 @@ export function DependentsPanel({ cnic }: { cnic: string }) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="py-3 px-3 text-center text-ink-soft">
+                <td colSpan={6} className="py-3 px-3 text-center text-ink-soft">
                   <span className="inline-flex items-center gap-2">
                     <Icon d={ICONS.info} size={16} color="#0b5fa8" />
-                    Click “Fetch from NADRA” or upload an FRC to see the demo dependents.
+                    Click “Fetch from NADRA” or upload an FRC to see the demo dependents, then add a photo for each.
                   </span>
                 </td>
               </tr>
