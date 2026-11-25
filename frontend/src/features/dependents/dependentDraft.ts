@@ -18,7 +18,8 @@ export interface DependentDraft {
   missing?: ('name' | 'relation' | 'cnic' | 'dob')[];
 }
 
-export const RELATIONS = ['Spouse', 'Wife', 'Husband', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandson', 'Granddaughter', 'Other'];
+/** relationships offered in the dropdown; anything else is typed in with "Other" */
+export const RELATIONS = ['Spouse', 'Wife', 'Husband', 'Son', 'Daughter', 'Father', 'Mother', 'Brother', 'Sister', 'Grandson', 'Granddaughter', 'Adopted Son', 'Adopted Daughter', 'Other'];
 
 let seq = 0;
 export const newKey = () => 'd' + Date.now().toString(36) + (seq++).toString(36);

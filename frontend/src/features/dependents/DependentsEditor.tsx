@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { resizePhoto } from '@/features/dashboard/logic/photo';
-import { emptyDraft, formatCnicInput, RELATIONS, type DependentDraft } from './dependentDraft';
+import { emptyDraft, formatCnicInput, genderOf, RELATIONS, type DependentDraft } from './dependentDraft';
 
 const INPUT = 'w-full min-h-[38px] px-2 border border-solid rounded-md text-[13px] bg-white box-border';
 const OK = ' border-essi-line focus:border-essi-teal';
@@ -28,6 +28,57 @@ function Avatar({ photo, name }: { photo?: string; name: string }) {
       <circle cx="22" cy="17" r="8" fill="#fff" />
       <path d="M6 44c0-10 7-14 16-14s16 4 16 14z" fill="#fff" />
     </svg>
+  );
+}
+
+const LISTED = RELATIONS.filter((r) => r !== 'Other');
+const OTHER = '__other__';
+
+/**
+ * Relationship dropdown. "Other (type it)" opens a text box for a relationship that is not in the list
+ * (e.g. Nephew, Mother-in-law); a value read from the FRC that is not in the list also shows in that box.
+ */
+function RelationPicker({ label, value, onChange, className, disabled }: { label: string; value: string; onChange: (v: string) => void; className: string; disabled: boolean }) {
+  const [typing, setTyping] = useState(false);
+  const listed = LISTED.find((r) => r.toLowerCase() === value.trim().toLowerCase());
+  const other = typing || (!!value.trim() && !listed);
+  return (
+    <div className="flex flex-col gap-1">
+      <select
+        aria-label={label}
+        className={className}
+        disabled={disabled}
+        value={other ? OTHER : listed || ''}
+        onChange={(e) => {
+          if (e.target.value === OTHER) {
+            setTyping(true);
+            onChange('');
+          } else {
+            setTyping(false);
+            onChange(e.target.value);
+          }
+        }}
+      >
+        <option value="">-- Select --</option>
+        {LISTED.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+        <option value={OTHER}>Other (type it)</option>
+      </select>
+      {other ? (
+        <input
+          aria-label={label + ' (other)'}
+          className={className}
+          value={value}
+          disabled={disabled}
+          placeholder="Type relationship"
+          autoFocus={typing && !value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -69,11 +120,6 @@ export function DependentsEditor({
 
   return (
     <div>
-      <datalist id="dependent-relations">
-        {RELATIONS.map((r) => (
-          <option key={r} value={r} />
-        ))}
-      </datalist>
       {anyMissing ? (
         <div className="mb-2 text-[12px] text-[#6b5300] bg-[#fff8e1] border border-solid border-[#f0d78a] rounded-md py-1.5 px-2.5">
           Boxes highlighted in yellow could not be read from the certificate. Please type them in.
@@ -132,14 +178,15 @@ export function DependentsEditor({
                     <input aria-label={`Dependent ${i + 1} name`} className={cls(r, 'name')} value={r.name} disabled={disabled} placeholder="Full name" onChange={(e) => update(r.key, { name: e.target.value })} />
                   </td>
                   <td className={TD}>
-                    <input
-                      aria-label={`Dependent ${i + 1} relationship`}
-                      list="dependent-relations"
+                    <RelationPicker
+                      label={`Dependent ${i + 1} relationship`}
                       className={cls(r, 'relation')}
                       value={r.relation}
                       disabled={disabled}
-                      placeholder="Select / type"
-                      onChange={(e) => update(r.key, { relation: e.target.value })}
+                      onChange={(relation) =>
+                        // fill the gender from the relationship unless the user already chose a different one
+                        update(r.key, { relation, gender: !r.gender || r.gender === genderOf(r.relation) ? genderOf(relation) || r.gender : r.gender })
+                      }
                     />
                   </td>
                   <td className={TD}>
