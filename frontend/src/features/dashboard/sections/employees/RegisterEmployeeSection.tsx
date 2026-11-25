@@ -1,7 +1,8 @@
 /* Employer dashboard – Employee Management > Register / Edit Employee. */
 import { useState, type ReactNode } from 'react';
 import type { Any, ViewProps } from '@/types/view';
-import { BulkUploadPanel, DependentsPanel, DuplicateCheck, ICONS, SectionTitle, UploadMethodCards, type UploadMethod } from './EmployeeRegistrationParts';
+import { BulkImportPanel } from './BulkImportPanel';
+import { DependentsPanel, DuplicateCheck, ICONS, SectionTitle, UploadMethodCards, type UploadMethod } from './EmployeeRegistrationParts';
 
 const INPUT = 'py-0 px-2.5 min-h-[44px] border border-solid border-essi-teal rounded-md text-[14px] box-border w-full bg-white';
 const BTN_OUTLINE = 'inline-flex items-center justify-center gap-2 min-h-[44px] py-0 px-6 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[14px] cursor-pointer';
@@ -41,7 +42,7 @@ export function RegisterEmployeeSection({ v }: ViewProps) {
     <div className="mt-4 rounded-2xl border border-solid border-essi-line bg-white p-5 sm:p-7 shadow-[0_4px_18px_rgba(6,122,53,.10)]">
       <SectionTitle icon={ICONS.people}>{editing ? 'Edit Employee' : 'Employee Registration'}</SectionTitle>
       <UploadMethodCards value={method} onChange={setMethod} />
-      {method !== 'manual' ? <BulkUploadPanel method={method} /> : null}
+      {method !== 'manual' ? <BulkImportPanel method={method} v={v} /> : null}
 
       {method === 'manual' ? (
         <>

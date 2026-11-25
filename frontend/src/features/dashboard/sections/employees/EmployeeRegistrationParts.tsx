@@ -39,10 +39,10 @@ export const ICONS = {
   back: 'M19 12H5M11 6l-6 6 6 6',
 };
 
-const METHODS: { key: UploadMethod; label: string; icon: string; color: string; soon?: boolean }[] = [
-  { key: 'excel', label: 'Excel', icon: 'M6 3h9l4 4v14H6zM9 12l4 5M13 12l-4 5', color: '#1d7a43', soon: true },
-  { key: 'csv', label: 'CSV', icon: 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h4', color: '#0b5fa8', soon: true },
-  { key: 'api', label: 'API', icon: 'M7 18a4 4 0 01-.5-8A6 6 0 0118 8.5 4.5 4.5 0 0117.5 18M12 12v6M9 15h6', color: '#0b5fa8', soon: true },
+const METHODS: { key: UploadMethod; label: string; icon: string; color: string }[] = [
+  { key: 'excel', label: 'Excel', icon: 'M6 3h9l4 4v14H6zM9 12l4 5M13 12l-4 5', color: '#1d7a43' },
+  { key: 'csv', label: 'CSV', icon: 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h4', color: '#0b5fa8' },
+  { key: 'api', label: 'API', icon: 'M7 18a4 4 0 01-.5-8A6 6 0 0118 8.5 4.5 4.5 0 0117.5 18M12 12v6M9 15h6', color: '#0b5fa8' },
   { key: 'manual', label: 'Manual Entry', icon: 'M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M7 14h10', color: '#0b4d24' },
 ];
 
@@ -59,56 +59,11 @@ export function UploadMethodCards({ value, onChange }: { value: UploadMethod; on
               <input type="radio" name="upload-method" checked={on} onChange={() => onChange(m.key)} className="absolute left-3.5 top-3.5 accent-[#067a35]" />
               <Icon d={m.icon} size={30} color={m.color} />
               <span className="font-semibold text-[14px]">{m.label}</span>
-              {m.soon ? <span className="absolute right-2 top-2 text-[10px] font-bold rounded-full bg-[#fff4d6] text-[#8a5200] py-px px-2">Soon</span> : null}
             </label>
           );
         })}
       </div>
     </fieldset>
-  );
-}
-
-const TEMPLATE_HEADER = 'CNIC,Name,Father Name,Date of Birth,Gender,Date of Joining,Designation,Monthly Wages,Bank Account,Mobile Number';
-const TEMPLATE_ROW = '42101-1234567-1,Ahmed Raza,Muhammad Raza,12/03/1988,MALE,01/02/2019,Production Supervisor,40000,0001-1234501,0300-1234567';
-
-function downloadTemplate() {
-  const blob = new Blob([TEMPLATE_HEADER + '\n' + TEMPLATE_ROW + '\n'], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'employee_template.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/** Drop zone + sample template for bulk methods. Bulk import is not connected to the server yet. */
-export function BulkUploadPanel({ method }: { method: Exclude<UploadMethod, 'manual'> }) {
-  const label = method === 'excel' ? 'Excel' : method === 'csv' ? 'CSV' : 'API';
-  const formats = method === 'excel' ? '.xlsx, .xls' : method === 'csv' ? '.csv' : '';
-  return (
-    <div className="flex flex-wrap items-center gap-4 rounded-[10px] border border-solid border-essi-line bg-[#eef9f1] py-4 px-5 mb-4">
-      <div className="flex items-center gap-4 flex-1 min-w-[260px]">
-        <Icon d={ICONS.upload} size={44} color="#067a35" />
-        <div>
-          <div className="font-bold text-[16px]">{method === 'api' ? 'Connect via API' : 'Upload ' + label + ' File'}</div>
-          {method === 'api' ? (
-            <div className="text-[13px] text-ink-soft">Send employee records from your payroll or HR system.</div>
-          ) : (
-            <div className="text-[13px]">
-              Drag &amp; drop your file here or <span className="font-semibold text-essi-green underline">Browse File</span>
-              <div className="text-[11px] text-ink-muted">Supported formats: {formats} (Max size: 5MB)</div>
-            </div>
-          )}
-          <div className="mt-1.5 text-[12px] text-[#8a5200]">Bulk {method === 'api' ? 'API access' : 'import'} is not available yet — use Manual Entry below to save employees.</div>
-        </div>
-      </div>
-      {method !== 'api' ? (
-        <button type="button" onClick={downloadTemplate} className="inline-flex items-center gap-2 min-h-[44px] px-5 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[13px] cursor-pointer">
-          <Icon d={ICONS.download} size={18} />
-          Download Sample Template
-        </button>
-      ) : null}
-    </div>
   );
 }
 

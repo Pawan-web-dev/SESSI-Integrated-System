@@ -560,6 +560,25 @@ export function useDashboardModel() {
       rmPhoto: () => setForm((f) => ({ ...f, ph: '' })), saveEmp,
       cancelEmp: () => { setForm({}); setFormErr(''); setEditId(null); go('Employee Management|Profile for Contribution'); },
       resetEmpForm: () => { setForm({}); setFormErr(''); },
+      // bulk import (Excel / CSV / API): saves one employee at a time and reports what failed
+      existingCnics: employees.map((e) => e.cnic.replace(/\D/g, '')),
+      importEmployees: async (rows: EmployeeInput[]) => {
+        dispatch(busyChanged(true));
+        const failed: { name: string; message: string }[] = [];
+        let created = 0;
+        for (const body of rows) {
+          try {
+            await createEmployee(body).unwrap();
+            created++;
+          } catch (err) {
+            failed.push({ name: body.full_name, message: errorMessage(err) });
+          }
+        }
+        dispatch(busyChanged(false));
+        if (created) setSavedMsg(created + ' employee(s) were imported and added to the list below.');
+        return { created, failed };
+      },
+      openEmployeeList: () => go('Employee Management|Profile for Contribution'),
       setFormError: setFormErr,
       // duplicate check against the employees already registered (another record with the same CNIC)
       cnicState: (fm.cn || '').replace(/\D/g, '').length !== 13 ? 'idle'
