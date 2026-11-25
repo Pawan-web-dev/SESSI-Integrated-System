@@ -1,9 +1,8 @@
 /* Building blocks of the Employee Registration screen. */
-import { useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export type UploadMethod = 'excel' | 'csv' | 'api' | 'manual';
 
-const INPUT = 'py-0 px-3 min-h-[44px] border border-solid border-essi-input rounded-md text-[14px] box-border w-full bg-white focus:outline-2 focus:outline-essi-teal';
 
 const Icon = ({ d, size = 22, color = 'currentColor' }: { d: string; size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-none">
@@ -109,64 +108,6 @@ export function BulkUploadPanel({ method }: { method: Exclude<UploadMethod, 'man
           Download Sample Template
         </button>
       ) : null}
-    </div>
-  );
-}
-
-interface FieldProps {
-  id: string;
-  label: string;
-  required?: boolean;
-  children: ReactNode;
-}
-
-/** Label on the left, control on the right (stacks on small screens). */
-export function Field({ id, label, required = true, children }: FieldProps) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-[130px_1fr] items-center gap-x-3 gap-y-1 text-[14px]">
-      <label htmlFor={id} className="font-semibold text-[#1d2f24]">
-        {label} {required ? <span className="text-danger">*</span> : null}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-export const inputClass = INPUT;
-
-/** Text box with a calendar button that opens the browser's date picker; keeps DD/MM/YYYY text. */
-export function DateInput({ id, value, onText }: { id: string; value: string; onText: (text: string) => void }) {
-  const native = useRef<HTMLInputElement>(null);
-  const iso = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
-  return (
-    <div className="relative">
-      <input id={id} className={INPUT + ' pr-10'} placeholder="DD/MM/YYYY" value={value} onChange={(e) => onText(e.target.value)} inputMode="numeric" />
-      <button
-        type="button"
-        aria-label="Open calendar"
-        className="absolute right-1 top-1 w-9 h-9 flex items-center justify-center bg-transparent border-0 text-ink-muted cursor-pointer"
-        onClick={() => {
-          try {
-            native.current?.showPicker();
-          } catch {
-            native.current?.focus();
-          }
-        }}
-      >
-        <Icon d={ICONS.calendar} size={18} />
-      </button>
-      <input
-        ref={native}
-        type="date"
-        tabIndex={-1}
-        aria-hidden="true"
-        value={iso ? iso[3] + '-' + iso[2] + '-' + iso[1] : ''}
-        onChange={(e) => {
-          const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(e.target.value);
-          if (m) onText(m[3] + '/' + m[2] + '/' + m[1]);
-        }}
-        className="absolute right-0 bottom-0 w-px h-px opacity-0 pointer-events-none"
-      />
     </div>
   );
 }
