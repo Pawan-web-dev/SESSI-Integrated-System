@@ -1,6 +1,7 @@
 /* Employer dashboard – Employee Management > Profile for Contribution (markup taken from the approved design). */
 import React from 'react';
 import type { Any, ViewProps } from '@/types/view';
+import { DependentsList } from '@/features/dependents/DependentsList';
 
 export function EmployeeProfilesSection({ v }: ViewProps) {
   return (
@@ -39,6 +40,7 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                 </div>
               </React.Fragment>))}
             </div>
+            <DependentsList items={v.pDeps || []} />
             <div className="mt-3 flex flex-wrap gap-2.5">
               <button onClick={v.editFromPanel} className="min-h-[44px] py-0 px-4.5 rounded-lg text-[14px] font-semibold bg-essi-dark text-white border-0">
                 {"Edit"}

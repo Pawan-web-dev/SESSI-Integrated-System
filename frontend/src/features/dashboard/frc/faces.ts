@@ -20,6 +20,11 @@ function getDetector(): Promise<FaceDetector> {
   return detector;
 }
 
+/** Load the face detector in the background (called together with the OCR warm-up). */
+export function warmUpFaces(): void {
+  void getDetector().catch(() => undefined);
+}
+
 /** Faces found in an image, in its own pixel coordinates. */
 export async function detectFaces(image: HTMLCanvasElement): Promise<FaceBox[]> {
   const d = await getDetector();

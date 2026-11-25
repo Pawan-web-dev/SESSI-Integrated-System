@@ -189,10 +189,106 @@ export interface EmployeeInput {
   bank_account: string | null;
   /** 200x200 JPEG data URL */
   photo: string | null;
+  /** family members; leave out to keep the saved list, [] removes all */
+  dependents?: DependentInput[];
 }
-export interface Employee extends EmployeeInput {
+export type DependentSource = 'FRC' | 'Manual' | 'NADRA';
+/** A family member of an employee (read from the FRC or typed in). */
+export interface DependentInput {
+  /** set for a dependent that is already saved */
+  id?: number | null;
+  name: string;
+  relation: string;
+  /** CNIC or B-Form number */
+  cnic: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  photo: string | null;
+  source: DependentSource;
+}
+export interface Dependent extends DependentInput {
+  id: number;
+}
+export interface Employee extends Omit<EmployeeInput, 'dependents'> {
   id: number;
   status: 'Active' | 'Inactive' | 'Separated';
+  dependents: Dependent[];
+}
+
+/* ---------- admin panel ---------- */
+export interface LabelValue {
+  label: string;
+  value: number;
+}
+export interface AdminDashboard {
+  employers: Record<'approved' | 'pending' | 'rejected' | 'closed', number>;
+  employers_total: number;
+  pending_applications: number;
+  employees: Record<'Active' | 'Inactive' | 'Separated', number>;
+  employees_total: number;
+  dependents_total: number;
+  pending_change_requests: number;
+  contributions_this_month: number;
+  collected_total: number;
+  outstanding_total: number;
+  unpaid_challans: number;
+  employees_by_type: LabelValue[];
+  employees_by_gender: LabelValue[];
+  trend: { month: string; registrations: number; employees: number }[];
+  top_employers: { id: number; name: string; ein: string | null; employees: number }[];
+}
+export interface AdminEmployer {
+  id: number;
+  ein: string | null;
+  name: string;
+  status: 'approved' | 'pending' | 'rejected' | 'closed';
+  business_type: string;
+  industry: string;
+  district: string;
+  contact_person: string;
+  contact_mobile: string;
+  contact_email: string;
+  approved_at: string | null;
+  created_at: string;
+  employees: number;
+  active_employees: number;
+}
+export interface AdminWorker {
+  id: number;
+  full_name: string;
+  father_name: string;
+  cnic: string;
+  gender: string;
+  mobile: string;
+  designation: string;
+  employment_type: string;
+  status: Employee['status'];
+  photo: string | null;
+  employer_id: number;
+  employer_name: string;
+  employer_ein: string | null;
+  /** number of dependents */
+  dependents: number;
+}
+export interface AdminEmployerDetail extends AdminEmployer {
+  address: string;
+  directorate: string;
+  secp_no: string;
+  ntn: string;
+  srb_no: string;
+  designation: string | null;
+  office_phone: string | null;
+  employees_list: AdminWorker[];
+}
+export interface AdminWorkerDetail extends AdminWorker {
+  date_of_birth: string | null;
+  skill_level: string | null;
+  wage_type: string | null;
+  payment_frequency: string | null;
+  date_joined: string | null;
+  monthly_wage: number | null;
+  bank_account: string | null;
+  dependents_list: Dependent[];
 }
 export interface ContributionLine {
   employee_id: number | null;

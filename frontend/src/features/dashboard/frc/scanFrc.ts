@@ -1,12 +1,13 @@
 /**
  * Scans a Family Registration Certificate completely offline:
- *   1. OCR (Tesseract) reads the text, twice (normal and 2x size) so each pass can fix the other's misreads;
+ *   1. OCR (Tesseract) reads the text at normal size; only when that pass misses a name or CNIC is the
+ *      page read again enlarged, and the two passes fill each other's gaps. Pages are read in parallel;
  *   2. the layout parser turns the words into people (name, CNIC, date of birth, relationship);
  *   3. a face detector (MediaPipe BlazeFace) finds each person's photo, which is cropped to a 200x200 JPEG.
  */
-import { detectFaces, type FaceBox } from './faces';
-import { assembleFrc, extractCards, genderFromRelation, mergeCards, type FrcCards, type FrcPerson, type OcrWord } from './frcParse';
-import { recognizeWords } from './ocr';
+import { detectFaces, warmUpFaces, type FaceBox } from './faces';
+import { assembleFrc, extractCards, genderFromRelation, mergeCards, type FrcCards, type FrcPerson } from './frcParse';
+import { recognizeWords, warmUpOcr } from './ocr';
 import { loadPages, type PageImages } from './pages';
 
 export interface FrcMember {
@@ -33,6 +34,22 @@ export interface FrcScan {
   pages: number;
   /** how many people (applicant included) got a photo */
   photosFound: number;
+  /** seconds the scan took */
+  seconds: number;
+}
+
+/** Start the OCR engine and face detector in the background, so the user's first scan does not wait for them. */
+export function warmUpScanner(): void {
+  warmUpOcr();
+  warmUpFaces();
+}
+
+/**
+ * Did a pass read a name and CNIC on every card (so a second, slower pass is not worth it)? A missing date of birth
+ * alone does not trigger it: the user checks and corrects every row before saving anyway.
+ */
+function complete(found: FrcCards): boolean {
+  return found.cards.length > 0 && found.cards.every((c) => !!(c.name && c.cnic));
 }
 
 export type ScanProgress = (message: string, percent: number) => void;
@@ -46,7 +63,7 @@ function photoWindow(p: FrcPerson, u: number) {
 
 /** Find the person's face to the left of their name and return it as a square 200x200 JPEG. */
 async function cropPhoto(page: PageImages, p: FrcPerson, u: number): Promise<string | undefined> {
-  const k = page.big.width / page.base.width; // 2
+  const k = page.big.width / page.base.width; // up to 2
   const win = photoWindow(p, u);
   const sx = Math.max(0, Math.floor(win.x0 * k));
   const sy = Math.max(0, Math.floor(win.y0 * k));
@@ -87,27 +104,34 @@ async function cropPhoto(page: PageImages, p: FrcPerson, u: number): Promise<str
 
 /** Read an FRC (image or PDF) and return the applicant, the family members and their photos. */
 export async function scanFrc(file: File, onProgress: ScanProgress = () => undefined): Promise<FrcScan> {
+  const started = performance.now();
+  warmUpScanner();
   onProgress('Opening the file…', 2);
   const pages = await loadPages(file);
-  const total = pages.length * 2;
-  let done = 0;
-  const step = (label: string) => (fraction: number) => onProgress(label, Math.round(5 + ((done + fraction) / total) * 70));
 
-  const cardsByPage: FrcCards[] = [];
+  // progress: every page counts the same; the first pass of a page is 0..0.9 of it and a second pass, if needed, the rest
+  const pageProgress = pages.map(() => 0);
+  const report = (label: string) => onProgress(label, Math.round(5 + (pageProgress.reduce((a, b) => a + b, 0) / pages.length) * 70));
+  const label = (i: number, extra = '') => (pages.length > 1 ? `Reading page ${i + 1} of ${pages.length}` : 'Reading the certificate') + extra + '…';
+
+  const readPage = async (i: number): Promise<FrcCards> => {
+    const normal = extractCards(await recognizeWords(pages[i].base, (f) => { pageProgress[i] = f * 0.9; report(label(i)); }));
+    if (complete(normal)) {
+      pageProgress[i] = 1;
+      report(label(i));
+      return normal;
+    }
+    // something was missed: read the enlarged page too (coordinates scaled back so both passes agree)
+    const k = pages[i].big.width / pages[i].base.width;
+    const words = await recognizeWords(pages[i].big, (f) => { pageProgress[i] = 0.9 + f * 0.1; report(label(i, ' (closer look)')); });
+    const enlarged = extractCards(words.map((w) => ({ ...w, x0: w.x0 / k, y0: w.y0 / k, x1: w.x1 / k, y1: w.y1 / k })));
+    pageProgress[i] = 1;
+    return mergeCards([enlarged, normal]);
+  };
+
+  const cardsByPage = await Promise.all(pages.map((_, i) => readPage(i)));
   const pageOf = new Map<FrcPerson, number>();
-  for (let i = 0; i < pages.length; i++) {
-    const label = pages.length > 1 ? `Reading page ${i + 1} of ${pages.length}` : 'Reading the certificate';
-    const passes: FrcCards[] = [];
-    // pass 1 at normal size, pass 2 at 2x (coordinates are scaled back so both passes agree)
-    const normal: OcrWord[] = await recognizeWords(pages[i].base, step(label + '…'));
-    done++;
-    const enlarged = (await recognizeWords(pages[i].big, step(label + ' (enlarged)…'))).map((w) => ({ ...w, x0: w.x0 / 2, y0: w.y0 / 2, x1: w.x1 / 2, y1: w.y1 / 2 }));
-    done++;
-    passes.push(extractCards(enlarged), extractCards(normal));
-    const merged = mergeCards(passes);
-    merged.cards.forEach((c) => pageOf.set(c, i));
-    cardsByPage.push(merged);
-  }
+  cardsByPage.forEach((merged, i) => merged.cards.forEach((c) => pageOf.set(c, i)));
 
   const first = cardsByPage.find((p) => p.cards.length);
   if (!first) throw new Error('No family details were found. Make sure the picture is a clear, upright FRC.');
@@ -116,16 +140,19 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
 
   const people = [result.applicant, ...result.members];
   const photos = new Map<FrcPerson, string>();
-  for (let i = 0; i < people.length; i++) {
-    onProgress(`Finding photos (${i + 1} of ${people.length})…`, 78 + Math.round((i / people.length) * 20));
-    const pageIndex = pageOf.get(people[i]) ?? 0;
+  let photosDone = 0;
+  onProgress('Finding photos…', 78);
+  await Promise.all(people.map(async (person) => {
+    const pageIndex = pageOf.get(person) ?? 0;
     try {
-      const photo = await cropPhoto(pages[pageIndex], people[i], cardsByPage[pageIndex].textHeight);
-      if (photo) photos.set(people[i], photo);
+      const photo = await cropPhoto(pages[pageIndex], person, cardsByPage[pageIndex].textHeight);
+      if (photo) photos.set(person, photo);
     } catch {
       /* no photo for this person; the rest of the scan still works */
     }
-  }
+    photosDone++;
+    onProgress(`Finding photos (${photosDone} of ${people.length})…`, 78 + Math.round((photosDone / people.length) * 20));
+  }));
 
   const a = result.applicant;
   onProgress('Done', 100);
@@ -134,5 +161,6 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
     members: result.members.map((m) => ({ relation: m.relation, name: m.name, cnic: m.cnic, dob: m.dob, photo: photos.get(m) })),
     pages: pages.length,
     photosFound: photos.size,
+    seconds: Math.round((performance.now() - started) / 100) / 10,
   };
 }

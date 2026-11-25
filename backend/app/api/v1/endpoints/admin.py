@@ -1,15 +1,16 @@
-"""ESSI officers: sign-in, registration review (issues the EIN), change-request review, audit trail."""
-from fastapi import APIRouter, Query
+"""ESSI officers: sign-in, dashboard, establishments and workers (with dependents), registration review (issues the EIN), change-request review, audit trail."""
+from fastapi import APIRouter, Query, status as http_status
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from app.api.deps import DB, CurrentAdmin, admin_actor
 from app.models import AuditLog, Employer
 from app.models.change_request import PENDING_REVIEW
+from app.schemas.admin import AdminDashboardOut, AdminEmployerDetailOut, AdminEmployerOut, AdminWorkerDetailOut, AdminWorkerListOut
 from app.schemas.common import AdminLoginIn, AuditOut, Message, TokenOut
-from app.schemas.employer import ChangeRequestDecisionIn, ChangeRequestOut
+from app.schemas.employer import ChangeRequestDecisionIn, ChangeRequestOut, DependentIn, DependentOut
 from app.schemas.registration import ApplicationDetailOut, ApplicationListOut, ProgressIn, RejectIn
-from app.services import auth, change_requests, registration
+from app.services import admin_overview, auth, change_requests, employees, registration
 from app.services.files import file_path
 from app.services.notify import audit
 
@@ -20,6 +21,56 @@ router = APIRouter(prefix='/admin')
 def login(body: AdminLoginIn, db: DB):
     token, admin = auth.login_admin(db, body.username, body.password)
     return TokenOut(access_token=token, name=admin.full_name, role=admin.role)
+
+
+# ---------------------------------------------------------------- dashboard
+@router.get('/dashboard', response_model=AdminDashboardOut, tags=['Admin – overview'])
+def dashboard(admin: CurrentAdmin, db: DB):
+    """Headline figures: establishments, employees, dependents, contributions and the last 6 months."""
+    return admin_overview.dashboard(db)
+
+
+# ---------------------------------------------------------------- establishments and workers
+@router.get('/employers', response_model=list[AdminEmployerOut], tags=['Admin – establishments'])
+def list_employers(admin: CurrentAdmin, db: DB, q: str = Query('', max_length=100),
+                   status: str | None = Query(None, pattern='^(pending|approved|rejected|closed)$')):
+    return admin_overview.list_employers(db, q, status)
+
+
+@router.get('/employers/{employer_id}', response_model=AdminEmployerDetailOut, tags=['Admin – establishments'])
+def get_employer(employer_id: int, admin: CurrentAdmin, db: DB):
+    return admin_overview.employer_detail(db, employer_id)
+
+
+@router.get('/employees', response_model=AdminWorkerListOut, tags=['Admin – workers'])
+def list_workers(admin: CurrentAdmin, db: DB, q: str = Query('', max_length=100), employer_id: int | None = None,
+                 status: str | None = Query(None, pattern='^(Active|Inactive|Separated)$'),
+                 offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=200)):
+    """Workers of every establishment. `q` matches name, father's name, CNIC (with or without dashes) or establishment."""
+    return admin_overview.list_workers(db, q, employer_id, status, offset, limit)
+
+
+@router.get('/employees/{employee_id}', response_model=AdminWorkerDetailOut, tags=['Admin – workers'])
+def get_worker(employee_id: int, admin: CurrentAdmin, db: DB):
+    """A worker with all their dependents."""
+    return admin_overview.worker_detail(db, admin_overview.get_worker(db, employee_id))
+
+
+@router.post('/employees/{employee_id}/dependents', response_model=DependentOut, status_code=http_status.HTTP_201_CREATED, tags=['Admin – workers'])
+def add_dependent(employee_id: int, body: DependentIn, admin: CurrentAdmin, db: DB):
+    emp = admin_overview.get_worker(db, employee_id)
+    return employees.add_dependent(db, emp, body, admin_actor(admin))
+
+
+@router.put('/dependents/{dependent_id}', response_model=DependentOut, tags=['Admin – workers'])
+def update_dependent(dependent_id: int, body: DependentIn, admin: CurrentAdmin, db: DB):
+    return employees.update_dependent(db, admin_overview.get_dependent(db, dependent_id), body, admin_actor(admin))
+
+
+@router.delete('/dependents/{dependent_id}', response_model=Message, tags=['Admin – workers'])
+def delete_dependent(dependent_id: int, admin: CurrentAdmin, db: DB):
+    employees.delete_dependent(db, admin_overview.get_dependent(db, dependent_id), admin_actor(admin))
+    return Message(message='Dependent removed.')
 
 
 # ---------------------------------------------------------------- registrations

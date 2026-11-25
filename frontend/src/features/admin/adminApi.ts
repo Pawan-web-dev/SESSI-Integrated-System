@@ -1,11 +1,56 @@
-/** ESSI officer: sign-in, registration review, change-request review. */
+/** ESSI officer: sign-in, dashboard, establishments, workers and their dependents, registration and change-request review. */
 import { baseApi } from '@/services/api/baseApi';
-import type { ApplicationDetail, ApplicationList, ApplicationStatus, ChangeRequest, TokenResponse } from '@/services/api/types';
+import type {
+  AdminDashboard, AdminEmployer, AdminEmployerDetail, AdminWorker, AdminWorkerDetail, ApplicationDetail, ApplicationList, ApplicationStatus,
+  ChangeRequest, Dependent, DependentInput, Message, TokenResponse,
+} from '@/services/api/types';
+
+export interface WorkerQuery {
+  q?: string;
+  status?: string;
+  employer_id?: number;
+  offset?: number;
+  limit?: number;
+}
+
+const DEPENDENT_TAGS = ['AdminWorkers', 'AdminDashboard', 'AdminEmployers', 'Employees'] as const;
 
 export const adminApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     adminLogin: build.mutation<TokenResponse, { username: string; password: string }>({
       query: (body) => ({ url: '/admin/login', method: 'POST', body }),
+    }),
+    getAdminDashboard: build.query<AdminDashboard, void>({
+      query: () => '/admin/dashboard',
+      providesTags: ['AdminDashboard'],
+    }),
+    getAdminEmployers: build.query<AdminEmployer[], { q?: string; status?: string }>({
+      query: ({ q, status }) => ({ url: '/admin/employers', params: { ...(q ? { q } : {}), ...(status ? { status } : {}) } }),
+      providesTags: ['AdminEmployers'],
+    }),
+    getAdminEmployer: build.query<AdminEmployerDetail, number>({
+      query: (id) => `/admin/employers/${id}`,
+      providesTags: ['AdminEmployers', 'AdminWorkers'],
+    }),
+    getAdminWorkers: build.query<{ total: number; items: AdminWorker[] }, WorkerQuery>({
+      query: (p) => ({ url: '/admin/employees', params: Object.fromEntries(Object.entries(p).filter(([, v]) => v !== '' && v !== undefined)) }),
+      providesTags: ['AdminWorkers'],
+    }),
+    getAdminWorker: build.query<AdminWorkerDetail, number>({
+      query: (id) => `/admin/employees/${id}`,
+      providesTags: ['AdminWorkers'],
+    }),
+    addDependent: build.mutation<Dependent, { employeeId: number; body: DependentInput }>({
+      query: ({ employeeId, body }) => ({ url: `/admin/employees/${employeeId}/dependents`, method: 'POST', body }),
+      invalidatesTags: [...DEPENDENT_TAGS],
+    }),
+    updateDependent: build.mutation<Dependent, { id: number; body: DependentInput }>({
+      query: ({ id, body }) => ({ url: `/admin/dependents/${id}`, method: 'PUT', body }),
+      invalidatesTags: [...DEPENDENT_TAGS],
+    }),
+    deleteDependent: build.mutation<Message, number>({
+      query: (id) => ({ url: `/admin/dependents/${id}`, method: 'DELETE' }),
+      invalidatesTags: [...DEPENDENT_TAGS],
     }),
     getApplications: build.query<ApplicationList, ApplicationStatus>({
       query: (status) => ({ url: '/admin/applications', params: { status } }),
@@ -21,7 +66,7 @@ export const adminApi = baseApi.injectEndpoints({
     }),
     approveApplication: build.mutation<ApplicationDetail, number>({
       query: (id) => ({ url: `/admin/applications/${id}/approve`, method: 'POST' }),
-      invalidatesTags: ['Applications', 'Outbox'],
+      invalidatesTags: ['Applications', 'Outbox', 'AdminDashboard', 'AdminEmployers'],
     }),
     rejectApplication: build.mutation<ApplicationDetail, { id: number; reason: string }>({
       query: ({ id, reason }) => ({ url: `/admin/applications/${id}/reject`, method: 'POST', body: { reason } }),
@@ -39,6 +84,8 @@ export const adminApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetAdminDashboardQuery, useGetAdminEmployersQuery, useGetAdminEmployerQuery, useGetAdminWorkersQuery, useGetAdminWorkerQuery,
+  useAddDependentMutation, useUpdateDependentMutation, useDeleteDependentMutation,
   useAdminLoginMutation, useGetApplicationsQuery, useGetApplicationQuery, usePostProgressMutation, useApproveApplicationMutation,
   useRejectApplicationMutation, useGetChangeRequestsForReviewQuery, useDecideChangeRequestMutation,
 } = adminApi;

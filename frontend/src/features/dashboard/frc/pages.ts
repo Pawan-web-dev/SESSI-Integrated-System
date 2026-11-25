@@ -3,11 +3,15 @@
 export interface PageImages {
   /** page at normal size (used for the first OCR pass) */
   base: HTMLCanvasElement;
-  /** page at 2x (second OCR pass and the source of the person photos) */
+  /** enlarged page (up to 2x; second OCR pass when the first missed something, and the source of the person photos) */
   big: HTMLCanvasElement;
 }
 
 const MAX_BASE_WIDTH = 1700;
+/** the enlarged copy is at most this wide: a 2x copy of a 1700 px page has 4x the pixels and took most of the scan time */
+const MAX_BIG_WIDTH = 2600;
+/** PDFs are drawn at this width (sharp vector text, so one OCR pass is usually enough) */
+const PDF_WIDTH = 1600;
 const MAX_PAGES = 6;
 
 function canvasOf(w: number, h: number): HTMLCanvasElement {
@@ -27,7 +31,7 @@ function scaled(src: HTMLCanvasElement, factor: number): HTMLCanvasElement {
 
 function toPage(source: HTMLCanvasElement): PageImages {
   const base = source.width > MAX_BASE_WIDTH ? scaled(source, MAX_BASE_WIDTH / source.width) : source;
-  return { base, big: scaled(base, 2) };
+  return { base, big: scaled(base, Math.min(2, MAX_BIG_WIDTH / base.width)) };
 }
 
 async function imagePage(file: File): Promise<PageImages[]> {
@@ -50,7 +54,7 @@ async function pdfPages(file: File): Promise<PageImages[]> {
   for (let n = 1; n <= Math.min(doc.numPages, MAX_PAGES); n++) {
     const page = await doc.getPage(n);
     const natural = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: 1100 / natural.width });
+    const viewport = page.getViewport({ scale: PDF_WIDTH / natural.width });
     const c = canvasOf(viewport.width, viewport.height);
     await page.render({ canvas: c, viewport }).promise;
     pages.push(toPage(c));

@@ -6,7 +6,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { adminSignedOut } from '@/features/auth/authSlice';
 import type { ApplicationStatus, ChangeRequest } from '@/services/api/types';
 
-export type AdminSection = 'registrations' | 'changes';
+export type AdminSection = 'dashboard' | 'employers' | 'workers' | 'registrations' | 'changes';
 
 export interface AdminState {
   section: AdminSection;
@@ -14,14 +14,19 @@ export interface AdminState {
   changeRequestStatus: ChangeRequest['status'];
   /** application open in the review window */
   reviewId: number | null;
+  /** establishment / worker opened from a list (null: show the list) */
+  employerId: number | null;
+  workerId: number | null;
   message: string;
 }
 
 const initialState: AdminState = {
-  section: 'registrations',
+  section: 'dashboard',
   applicationStatus: 'pending',
   changeRequestStatus: 'Pending Review',
   reviewId: null,
+  employerId: null,
+  workerId: null,
   message: '',
 };
 
@@ -31,6 +36,21 @@ const adminSlice = createSlice({
   reducers: {
     sectionChanged(state, action: PayloadAction<AdminSection>) {
       state.section = action.payload;
+      state.employerId = null;
+      state.workerId = null;
+      state.message = '';
+    },
+    /** open an establishment's page (or back to the list with null) */
+    employerOpened(state, action: PayloadAction<number | null>) {
+      state.section = 'employers';
+      state.employerId = action.payload;
+      state.workerId = null;
+      state.message = '';
+    },
+    /** open a worker's page with their dependents (or back with null); stays in the current section */
+    workerOpened(state, action: PayloadAction<number | null>) {
+      if (state.section !== 'employers') state.section = 'workers';
+      state.workerId = action.payload;
       state.message = '';
     },
     applicationStatusChanged(state, action: PayloadAction<ApplicationStatus>) {
@@ -57,5 +77,5 @@ const adminSlice = createSlice({
   },
 });
 
-export const { sectionChanged, applicationStatusChanged, changeRequestStatusChanged, reviewOpened, reviewClosed, messageShown } = adminSlice.actions;
+export const { sectionChanged, employerOpened, workerOpened, applicationStatusChanged, changeRequestStatusChanged, reviewOpened, reviewClosed, messageShown } = adminSlice.actions;
 export default adminSlice.reducer;
