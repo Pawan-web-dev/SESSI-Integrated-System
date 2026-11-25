@@ -141,7 +141,7 @@ export function RegisterEmployeeSection({ v }: ViewProps) {
             </div>
           </fieldset>
 
-          <DependentsPanel />
+          <DependentsPanel cnic={v.fv_cn} />
 
           {v.hasErr ? (
             <div role="alert" className="mt-4 text-danger text-[14px] bg-danger-bg border border-solid border-[#f3b9b3] rounded-lg py-2.5 px-3.5">

@@ -1,5 +1,5 @@
 /* Building blocks of the Employee Registration screen. */
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export type UploadMethod = 'excel' | 'csv' | 'api' | 'manual';
 
@@ -67,56 +67,6 @@ export function UploadMethodCards({ value, onChange }: { value: UploadMethod; on
   );
 }
 
-/** Dependents box. NADRA lookup and FRC upload need an integration that does not exist yet. */
-export function DependentsPanel() {
-  return (
-    <div className="rounded-[10px] border border-solid border-essi-line bg-[#f2f9f6] p-3.5 mt-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
-        <div className="flex items-center gap-3">
-          <Icon d={ICONS.people} size={30} color="#067a35" />
-          <div>
-            <div className="font-bold text-[15px]">Dependents Information</div>
-            <div className="text-[12px] text-ink-soft">Names of Dependents will be fetched from NADRA and cannot be changed later.</div>
-          </div>
-        </div>
-        <div className="flex gap-2.5">
-          <button type="button" disabled title="NADRA integration is not connected yet" className="inline-flex items-center gap-2 min-h-[42px] px-4 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[13px] opacity-60 cursor-not-allowed">
-            <Icon d={ICONS.refresh} size={16} />
-            Fetch from NADRA
-          </button>
-          <button type="button" disabled title="FRC upload is not connected yet" className="inline-flex items-center gap-2 min-h-[42px] px-4 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[13px] opacity-60 cursor-not-allowed">
-            <Icon d={ICONS.upload} size={16} />
-            Upload FRC
-          </button>
-        </div>
-      </div>
-      <div className="overflow-x-auto rounded-lg border border-solid border-essi-line bg-white">
-        <table className="w-full border-collapse text-[13px] min-w-[480px]">
-          <thead>
-            <tr className="bg-[#f1f7f4] text-left">
-              {['#', 'Name', 'Relationship', 'CNIC', 'Date of Birth'].map((h) => (
-                <th key={h} className="py-2 px-3 font-semibold border-b border-solid border-essi-line">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan={5} className="py-3 px-3 text-center text-ink-soft">
-                <span className="inline-flex items-center gap-2">
-                  <Icon d={ICONS.info} size={16} color="#0b5fa8" />
-                  Dependents will be fetched automatically from NADRA once the integration is connected.
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
 /** Green / red / neutral banner under the form. */
 export function DuplicateCheck({ state }: { state: 'idle' | 'ok' | 'dup' }) {
   const tone = state === 'dup' ? 'border-[#f3b9b3] bg-danger-bg text-danger' : 'border-essi-line bg-[#eef9f1] text-essi-dark';
@@ -129,6 +79,128 @@ export function DuplicateCheck({ state }: { state: 'idle' | 'ok' | 'dup' }) {
         <b>Duplicate Check:</b>{' '}
         {state === 'ok' ? 'CNIC is unique and available for registration.' : state === 'dup' ? 'An employee with this CNIC is already registered.' : 'Enter a full CNIC to check it against registered employees.'}
       </span>
+    </div>
+  );
+}
+
+interface Dependent {
+  name: string;
+  relationship: string;
+  cnic: string;
+  dob: string;
+}
+
+/** Demo dependents for a CNIC (the NADRA family tree is not connected, so these are sample records). */
+function demoDependents(cnic: string): Dependent[] {
+  const d = cnic.replace(/\D/g, '');
+  const spouse = d.slice(0, 12) + String((+d[12] + 1) % 10);
+  return [
+    { name: 'Ayesha Bibi', relationship: 'Spouse', cnic: spouse.slice(0, 5) + '-' + spouse.slice(5, 12) + '-' + spouse.slice(12), dob: '09/08/1993' },
+    { name: 'Ali Raza', relationship: 'Son', cnic: 'B-Form 42101-0000123-7', dob: '15/02/2016' },
+    { name: 'Fatima Noor', relationship: 'Daughter', cnic: 'B-Form 42101-0000456-9', dob: '21/10/2019' },
+  ];
+}
+
+const DEP_BTN = 'inline-flex items-center gap-2 min-h-[42px] px-4 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[13px] cursor-pointer';
+
+/**
+ * Dependents box (demo). "Fetch from NADRA" and "Upload FRC" fill the table with sample dependents;
+ * nothing is sent to NADRA and the list is not saved with the employee.
+ */
+export function DependentsPanel({ cnic }: { cnic: string }) {
+  const [list, setList] = useState<Dependent[]>([]);
+  const [source, setSource] = useState('');
+  const [message, setMessage] = useState('');
+  const validCnic = cnic.replace(/\D/g, '').length === 13;
+
+  const fetchNadra = () => {
+    if (!validCnic) return setMessage('Enter the employee’s full 13-digit CNIC first.');
+    setMessage('');
+    setList(demoDependents(cnic));
+    setSource('Fetched from NADRA (demo)');
+  };
+  const pickFrc = (file: File | undefined) => {
+    if (!file) return;
+    if (!/\.(pdf|jpe?g|png)$/i.test(file.name)) return setMessage('Choose a PDF, JPG or PNG file.');
+    if (file.size > 5 * 1024 * 1024) return setMessage('The FRC file is larger than 5 MB.');
+    setMessage('');
+    setList(demoDependents(validCnic ? cnic : '4210100000000'));
+    setSource('Read from FRC “' + file.name + '” (demo)');
+  };
+  const clear = () => {
+    setList([]);
+    setSource('');
+    setMessage('');
+  };
+
+  return (
+    <div className="rounded-[10px] border border-solid border-essi-line bg-[#f2f9f6] p-3.5 mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+        <div className="flex items-center gap-3">
+          <Icon d={ICONS.people} size={30} color="#067a35" />
+          <div>
+            <div className="font-bold text-[15px]">Dependents Information</div>
+            <div className="text-[12px] text-ink-soft">Names of Dependents will be fetched from NADRA and cannot be changed later.</div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          <button type="button" className={DEP_BTN} onClick={fetchNadra}>
+            <Icon d={ICONS.refresh} size={16} />
+            Fetch from NADRA
+          </button>
+          <label className={DEP_BTN}>
+            <Icon d={ICONS.upload} size={16} />
+            Upload FRC
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => { pickFrc(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {list.length ? (
+            <button type="button" className={DEP_BTN} onClick={clear}>
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {message ? (
+        <div role="alert" className="mb-2.5 text-danger text-[13px] bg-danger-bg border border-solid border-[#f3b9b3] rounded-lg py-2 px-3">
+          {message}
+        </div>
+      ) : null}
+      {source ? <div className="mb-2 text-[12px] text-essi-dark font-semibold">{source} · sample records only, not saved with the employee</div> : null}
+      <div className="overflow-x-auto rounded-lg border border-solid border-essi-line bg-white">
+        <table className="w-full border-collapse text-[13px] min-w-[480px]">
+          <thead>
+            <tr className="bg-[#f1f7f4] text-left">
+              {['#', 'Name', 'Relationship', 'CNIC', 'Date of Birth'].map((h) => (
+                <th key={h} className="py-2 px-3 font-semibold border-b border-solid border-essi-line">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {list.length ? (
+              list.map((d, i) => (
+                <tr key={d.name}>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line">{i + 1}</td>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line">{d.name}</td>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line">{d.relationship}</td>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line whitespace-nowrap">{d.cnic}</td>
+                  <td className="py-2 px-3 border-b border-solid border-essi-line">{d.dob}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="py-3 px-3 text-center text-ink-soft">
+                  <span className="inline-flex items-center gap-2">
+                    <Icon d={ICONS.info} size={16} color="#0b5fa8" />
+                    Click “Fetch from NADRA” or upload an FRC to see the demo dependents.
+                  </span>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
