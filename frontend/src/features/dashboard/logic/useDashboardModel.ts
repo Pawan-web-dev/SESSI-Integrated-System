@@ -235,6 +235,8 @@ export function useDashboardModel() {
     if (bad(f.ds)) miss.push('Designation');
     if (bad(f.et)) miss.push('Employment Type');
     if (miss.length) return setFormErr('Please fill in: ' + miss.join(', ') + '.');
+    const cnicDigits = f.cn.replace(/\D/g, '');
+    if (employees.some((e) => e.cnic.replace(/\D/g, '') === cnicDigits && e.id !== editId)) return setFormErr('An employee with this CNIC is already registered.');
     const dob = toIsoDate(f.dob);
     const joined = toIsoDate(f.dj);
     if (dob === 'invalid' || joined === 'invalid') return setFormErr('Enter dates as DD/MM/YYYY, for example 12/03/1988.');
@@ -557,6 +559,11 @@ export function useDashboardModel() {
       },
       rmPhoto: () => setForm((f) => ({ ...f, ph: '' })), saveEmp,
       cancelEmp: () => { setForm({}); setFormErr(''); setEditId(null); go('Employee Management|Profile for Contribution'); },
+      resetEmpForm: () => { setForm({}); setFormErr(''); },
+      setFormError: setFormErr,
+      // duplicate check against the employees already registered (another record with the same CNIC)
+      cnicState: (fm.cn || '').replace(/\D/g, '').length !== 13 ? 'idle'
+        : employees.some((e) => e.cnic.replace(/\D/g, '') === (fm.cn || '').replace(/\D/g, '') && e.id !== editId) ? 'dup' : 'ok',
       formErr, hasErr: !!formErr, savedMsg, hasMsg: !!savedMsg,
 
       /* contributions */
