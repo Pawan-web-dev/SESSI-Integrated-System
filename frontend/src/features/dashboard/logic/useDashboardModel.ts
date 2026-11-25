@@ -560,6 +560,11 @@ export function useDashboardModel() {
       rmPhoto: () => setForm((f) => ({ ...f, ph: '' })), saveEmp,
       cancelEmp: () => { setForm({}); setFormErr(''); setEditId(null); go('Employee Management|Profile for Contribution'); },
       resetEmpForm: () => { setForm({}); setFormErr(''); },
+      // fill the form from a scanned FRC (only the values that were found)
+      applyFrc: (found: Partial<Record<'fn' | 'fa' | 'cn' | 'dob' | 'gender' | 'ph', string>>) => {
+        setForm((cur) => ({ ...cur, ...Object.fromEntries(Object.entries(found).filter(([, val]) => val)) }));
+        setFormErr('');
+      },
       // bulk import (Excel / CSV / API): saves one employee at a time and reports what failed
       existingCnics: employees.map((e) => e.cnic.replace(/\D/g, '')),
       importEmployees: async (rows: EmployeeInput[]) => {

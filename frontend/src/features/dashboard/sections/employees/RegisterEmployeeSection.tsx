@@ -2,7 +2,8 @@
 import { useState, type ReactNode } from 'react';
 import type { Any, ViewProps } from '@/types/view';
 import { BulkImportPanel } from './BulkImportPanel';
-import { DependentsPanel, DuplicateCheck, ICONS, SectionTitle, UploadMethodCards, type UploadMethod } from './EmployeeRegistrationParts';
+import { DependentsPanel } from './DependentsPanel';
+import { DuplicateCheck, ICONS, SectionTitle, UploadMethodCards, type UploadMethod } from './EmployeeRegistrationParts';
 
 const INPUT = 'py-0 px-2.5 min-h-[44px] border border-solid border-essi-teal rounded-md text-[14px] box-border w-full bg-white';
 const BTN_OUTLINE = 'inline-flex items-center justify-center gap-2 min-h-[44px] py-0 px-6 rounded-lg border border-solid border-essi-green bg-white text-essi-green font-semibold text-[14px] cursor-pointer';
@@ -141,7 +142,7 @@ export function RegisterEmployeeSection({ v }: ViewProps) {
             </div>
           </fieldset>
 
-          <DependentsPanel cnic={v.fv_cn} />
+          <DependentsPanel cnic={v.fv_cn} onApply={v.applyFrc} />
 
           {v.hasErr ? (
             <div role="alert" className="mt-4 text-danger text-[14px] bg-danger-bg border border-solid border-[#f3b9b3] rounded-lg py-2.5 px-3.5">
