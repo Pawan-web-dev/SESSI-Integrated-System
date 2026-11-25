@@ -34,6 +34,14 @@ export function BulkImportPanel({ method, v }: { method: Method; v: ViewProps['v
   const [result, setResult] = useState<{ created: number; failed: { name: string; message: string }[] } | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
+  /** Excel gets a real .xlsx template; CSV gets a .csv one. Both contain the headings and three sample rows. */
+  const downloadTemplate = async () => {
+    if (method === 'csv') return download('employee_template.csv', sampleCsv(), 'text/csv');
+    const { default: writeXlsxFile } = await import('write-excel-file/browser');
+    const cell = (value: string, header = false) => (header ? { value, fontWeight: 'bold' as const } : { value });
+    await writeXlsxFile([TEMPLATE_COLUMNS.map((c) => cell(c, true)), ...SAMPLE_ROWS.map((r) => r.map((c) => cell(c)))], { columns: TEMPLATE_COLUMNS.map(() => ({ width: 20 })) }).toFile('employee_template.xlsx');
+  };
+
   const reset = () => {
     setRows(null);
     setSource('');
@@ -149,7 +157,7 @@ export function BulkImportPanel({ method, v }: { method: Method; v: ViewProps['v
         </div>
         {method !== 'api' ? (
           <div className="flex flex-col gap-2.5">
-            <button type="button" className={BTN} onClick={() => download('employee_template.csv', sampleCsv(), 'text/csv')}>
+            <button type="button" className={BTN} onClick={() => void downloadTemplate()}>
               <Svg d={ICONS.download} />
               Download Sample Template
             </button>
@@ -157,10 +165,14 @@ export function BulkImportPanel({ method, v }: { method: Method; v: ViewProps['v
               <Svg d={ICONS.check} />
               Try with sample data
             </button>
-            {method === 'excel' ? <span className="text-[11px] text-ink-muted max-w-[210px]">The template opens in Excel. Save it as .xlsx before uploading.</span> : null}
           </div>
         ) : null}
       </div>
+      {method !== 'api' ? (
+        <p className="text-[12px] text-ink-soft mt-2 mb-0">
+          <b>Columns (first row of the file):</b> {TEMPLATE_COLUMNS.join(', ')}. Dates as DD/MM/YYYY. Gender: MALE, FEMALE or TRANSGENDER. The employee photo is added later from the employee profile.
+        </p>
+      ) : null}
 
       {error ? (
         <div role="alert" className="mt-3 text-danger text-[14px] bg-danger-bg border border-solid border-[#f3b9b3] rounded-lg py-2.5 px-3.5">

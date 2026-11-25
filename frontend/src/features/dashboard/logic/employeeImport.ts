@@ -41,13 +41,13 @@ const ALIASES: Record<string, string> = {
 };
 
 /** Column headings of the downloadable template. */
-export const TEMPLATE_COLUMNS = ['CNIC', 'Name', 'Father Name', 'Date of Birth', 'Gender', 'Date of Joining', 'Designation', 'Employment Type', 'Monthly Wages', 'Bank Account', 'Mobile Number'];
+export const TEMPLATE_COLUMNS = ['Full Name', 'Father’s Name', 'Gender', 'CNIC No.', 'Date of Birth', 'Mobile No.', 'Designation', 'Skill Level', 'Employment Type', 'Wage Type', 'Payment Frequency', 'Date of Joining', 'Monthly Wages', 'Bank Account'];
 
-/** Demo employees used by "Load sample data". */
+/** Demo employees used by "Try with sample data" and the downloadable templates (same order as TEMPLATE_COLUMNS). */
 export const SAMPLE_ROWS: string[][] = [
-  ['42101-5550001-1', 'Zainab Ahmed', 'Ahmed Khan', '14/06/1992', 'FEMALE', '01/03/2024', 'Accounts Clerk', 'Permanent', '45000', '0001-5550001', '0300-5550001'],
-  ['42201-5550002-3', 'Hamza Siddiqui', 'Siddique Ali', '02/11/1989', 'MALE', '15/04/2024', 'Machine Operator', 'Contractual', '38000', '0001-5550002', '0321-5550002'],
-  ['42301-5550003-5', 'Naeem Baloch', 'Gul Baloch', '23/01/1995', 'MALE', '10/05/2024', 'Helper', 'Daily Wages', '37000', '0001-5550003', '0333-5550003'],
+  ['Zainab Ahmed', 'Ahmed Khan', 'FEMALE', '42101-5550001-1', '14/06/1992', '0300-5550001', 'Accounts Clerk', 'Skilled', 'Permanent', 'Monthly', 'Monthly', '01/03/2024', '45000', '0001-5550001'],
+  ['Hamza Siddiqui', 'Siddique Ali', 'MALE', '42201-5550002-3', '02/11/1989', '0321-5550002', 'Machine Operator', 'Semi-Skilled', 'Contractual', 'Monthly', 'Monthly', '15/04/2024', '38000', '0001-5550002'],
+  ['Naeem Baloch', 'Gul Baloch', 'MALE', '42301-5550003-5', '23/01/1995', '0333-5550003', 'Helper', 'Unskilled', 'Daily Wages', 'Daily', 'Daily', '10/05/2024', '37000', '0001-5550003'],
 ];
 
 export function sampleCsv(): string {
@@ -55,7 +55,7 @@ export function sampleCsv(): string {
 }
 
 export function sampleJson(): string {
-  const keys = ['cnic', 'full_name', 'father_name', 'date_of_birth', 'gender', 'date_joined', 'designation', 'employment_type', 'monthly_wage', 'bank_account', 'mobile'];
+  const keys = ['full_name', 'father_name', 'gender', 'cnic', 'date_of_birth', 'mobile', 'designation', 'skill_level', 'employment_type', 'wage_type', 'payment_frequency', 'date_joined', 'monthly_wage', 'bank_account'];
   return JSON.stringify({ employees: SAMPLE_ROWS.map((r) => Object.fromEntries(keys.map((k, i) => [k, k === 'monthly_wage' ? Number(r[i]) : r[i]]))) }, null, 2);
 }
 
