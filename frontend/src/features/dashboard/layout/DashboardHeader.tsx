@@ -1,8 +1,29 @@
 /* Employer dashboard – top banner (logo, notifications, user menu) (markup taken from the approved design). */
+import { useEffect, useRef } from 'react';
 import logo from '@/assets/images/essi-logo.png';
 import type { ViewProps } from '@/types/view';
 
 export function DashboardHeader({ v, P }: ViewProps) {
+  const menuRef = useRef<HTMLSpanElement>(null);
+  const { umOpen, umToggle } = v;
+
+  /* close the user menu on a click/tap anywhere outside it, or on Escape */
+  useEffect(() => {
+    if (!umOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) umToggle();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') umToggle(); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [umOpen, umToggle]);
+
   return (
     <>
       <header className="hd relative @container aspect-[1536/208] w-full text-white">
@@ -32,7 +53,7 @@ export function DashboardHeader({ v, P }: ViewProps) {
               {v.notifCount > 99 ? '99+' : v.notifCount}
             </span>) : null}
           </button>
-          <span className="hn relative">
+          <span className="hn relative" ref={menuRef}>
             <button type={"button"} aria-haspopup={"true"} onClick={v.umToggle} className="bg-transparent border-0 text-white [font:inherit] cursor-pointer min-h-[44px] py-0 px-1">
               {P.coName}{" ▾"}
             </button>
