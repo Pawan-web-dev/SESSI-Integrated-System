@@ -387,6 +387,8 @@ export interface DashboardSummary {
   last_payment: string | null;
 }
 export interface Notification {
+  id: number;
+  read_at: string | null;
   subject: string;
   body: string;
   created_at: string;

@@ -29,7 +29,9 @@ Signed-in calls send `Authorization: Bearer <access_token>`.
 | --- | --- | --- |
 | GET | `/employer/me` | Profile with EIN breakdown |
 | POST | `/employer/password` | Change password |
-| GET | `/employer/notifications` | SMS / e-mail notices sent to this employer (newest first) |
+| GET | `/employer/notifications` | SMS / e-mail notices sent to this employer (newest first); `read_at` is null while unread |
+| POST | `/employer/notifications/{id}/read` | Mark one notification as read |
+| POST | `/employer/notifications/read-all` | Mark every notification as read |
 | GET | `/employer/documents` | Documents from the registration application and their status |
 | GET | `/employer/documents/{id}/file` | One of the employer's own uploaded files (inline) |
 | GET | `/employer/dashboard` | Employee counts, last 6 months, outstanding, next due |
