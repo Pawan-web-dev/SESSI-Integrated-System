@@ -1,0 +1,10 @@
+{
+  "name": "essi-integrated-system",
+  "private": true,
+  "description": "Run from this folder: npm run dev (backend + frontend), npm run backend, npm run frontend.",
+  "scripts": {
+    "dev": "node dev.mjs",
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev"
+  }
+}
