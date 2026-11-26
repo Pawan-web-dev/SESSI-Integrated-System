@@ -1,0 +1,11 @@
+{
+  "name": "essi-backend",
+  "private": true,
+  "description": "Shortcuts for the Python API. Nothing to npm install here.",
+  "scripts": {
+    "dev": "node dev.mjs",
+    "seed": "node -e \"process.exit(require('child_process').spawnSync(require('path').join('.venv', process.platform==='win32'?'Scripts/python.exe':'bin/python'),['-m','app.seed'],{stdio:'inherit'}).status)\"",
+    "create-admin": "node -e \"process.exit(require('child_process').spawnSync(require('path').join('.venv', process.platform==='win32'?'Scripts/python.exe':'bin/python'),['-m','app.create_admin'],{stdio:'inherit'}).status)\"",
+    "test": "node -e \"process.exit(require('child_process').spawnSync(require('path').join('.venv', process.platform==='win32'?'Scripts/python.exe':'bin/python'),['-m','pytest'],{stdio:'inherit'}).status)\""
+  }
+}
