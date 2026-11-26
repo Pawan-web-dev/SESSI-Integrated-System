@@ -63,7 +63,9 @@ const LABEL_START = /^(full\s*name|father\s*name|mother\s*name|citizen\s*number|
 
 /** Group OCR words into line segments. */
 export function buildSegments(words: OcrWord[]): { segments: Segment[]; textHeight: number } {
-  const usable = words.filter((w) => /[A-Za-z0-9]/.test(w.text) && w.y1 > w.y0 && w.x1 > w.x0 && w.confidence >= 20);
+  // numbers (CNICs, dates) are kept even when the engine is unsure: it often reads them right but scores them ~0
+  // next to the "VALID" badge; the CNIC / date patterns below decide whether they are usable
+  const usable = words.filter((w) => /[A-Za-z0-9]/.test(w.text) && w.y1 > w.y0 && w.x1 > w.x0 && (w.confidence >= 20 || /\d{4,}/.test(w.text)));
   const h = median(usable.map((w) => w.y1 - w.y0)) || 12;
   const lines: OcrWord[][] = [];
   [...usable].sort((a, b) => (a.y0 + a.y1) / 2 - (b.y0 + b.y1) / 2).forEach((w) => {
@@ -104,7 +106,8 @@ export function buildSegments(words: OcrWord[]): { segments: Segment[]; textHeig
 }
 
 // real CNICs are 5-7-1 digits; some sample certificates print 8 digits in the middle, so both are accepted as printed
-const CNIC = /(\d{5})\s*[-–—]\s*(\d{7,8})\s*[-–—]\s*(\d)/;
+// OCR sometimes drops one of the dashes ("12345-500979929"), so each dash is optional but the digit count must fit
+const CNIC = /(?<!\d)(\d{5})\s*[-–—]?\s*(\d{7,8})\s*[-–—]?\s*(\d)(?!\d)/;
 const DATE = /(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*(\d{4})/;
 
 /** "9/02/1942" -> "09/02/1942"; null when the date cannot be right. */
@@ -186,7 +189,8 @@ export function extractCards(words: OcrWord[]): FrcCards {
   // 3. CNICs and dates of birth. The very first card (applicant box) prints its CNIC above its name.
   const first = [...cards].sort((a, b) => a.anchor.y - b.anchor.y)[0];
   for (const seg of byY) {
-    const c = CNIC.exec(seg.text.replace(/[Oo]/g, '0'));
+    const m = CNIC.exec(seg.text.replace(/[Oo]/g, '0'));
+    const c = m && /[-–—]/.test(m[0]) ? m : null; // a bare 13-digit run is a barcode, not a CNIC
     const card = (c && seg.cy < first.anchor.y && first.anchor.y - seg.cy < u * 3.2 ? first : null) || cardFor(seg, 0.9);
     if (c && card && !card.cnic) card.cnic = `${c[1]}-${c[2]}-${c[3]}`;
   }
@@ -210,7 +214,7 @@ export function extractCards(words: OcrWord[]): FrcCards {
     if (RELATION_WORDS.filter((r) => new RegExp('\\b' + r + '\\b').test(text)).length > 1 && !/DETAILS/.test(text)) continue;
     const card = cardFor(seg, 1.6);
     if (!card || card === first || card.relation) continue;
-    const head = /^(FATHER|MOTHER) DETAILS\b/.exec(text);
+    const head = /\b(FATHER|MOTHER|SPOUSE) DETAILS\b/.exec(text);
     if (head) card.relation = head[1][0] + head[1].slice(1).toLowerCase();
     else {
       const rel = RELATION_WORDS.filter((r) => text === r || text.startsWith(r + ' ')).sort((a, b) => b.length - a.length)[0];
@@ -255,7 +259,15 @@ export function assembleFrc(found: FrcCards): FrcResult {
   const { cards, box, hofRelation, textHeight: u } = found;
   if (!box) return { applicant: null, members: [], hofRelation, textHeight: u };
   const sameCnic = (a: string, b: string) => !!a && a.replace(/\D/g, '') === b.replace(/\D/g, '');
-  let applicant = cards.find((c) => c !== box && (c.relation === 'Self' || sameCnic(c.cnic, box.cnic))) || null;
+  const letters = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
+  const others = cards.filter((c) => c !== box && c.relation !== 'Spouse' && c.relation !== 'Father' && c.relation !== 'Mother');
+  // the applicant's card: labelled SELF, else the one with the applicant box's name, else its CNIC (family members
+  // can share a CNIC on sample certificates, so the name is the safer match)
+  let applicant =
+    others.find((c) => c.relation === 'Self') ||
+    others.find((c) => !!box.name && letters(c.name) === letters(box.name)) ||
+    others.find((c) => sameCnic(c.cnic, box.cnic)) ||
+    null;
   if (applicant && !applicant.relation) applicant.relation = 'Self';
   if (applicant) {
     applicant.role = 'self';

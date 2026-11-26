@@ -61,8 +61,17 @@ function contrasted(src: HTMLCanvasElement): HTMLCanvasElement {
   return c;
 }
 
+/**
+ * Small pictures (screenshots, WhatsApp images ~640 px wide) have text only ~8 px tall, which OCR cannot read;
+ * they are enlarged to this width first so the text is ~20 px tall in every pass.
+ */
+const MIN_BASE_WIDTH = 1600;
+
 function toPage(source: HTMLCanvasElement): PageImages {
-  const base = source.width > MAX_BASE_WIDTH ? scaled(source, MAX_BASE_WIDTH / source.width) : source;
+  const base =
+    source.width > MAX_BASE_WIDTH ? scaled(source, MAX_BASE_WIDTH / source.width)
+    : source.width < MIN_BASE_WIDTH ? scaled(source, MIN_BASE_WIDTH / source.width)
+    : source;
   return { base, big: scaled(base, Math.min(2, MAX_BIG_WIDTH / base.width)), sharp: contrasted(base) };
 }
 

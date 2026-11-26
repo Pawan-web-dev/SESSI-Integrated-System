@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { DependentsEditor } from '@/features/dependents/DependentsEditor';
 import { genderOf, newKey, type DependentDraft } from '@/features/dependents/dependentDraft';
 import { ICONS } from './EmployeeRegistrationParts';
+import type { FrcScan } from '../../frc/scanFrc';
+import { relationToWorker } from '../../frc/frcRelations';
 
 /** Fields of the employee form that a scanned FRC can fill. */
 export type FrcFill = Partial<Record<'fn' | 'fa' | 'cn' | 'dob' | 'gender' | 'ph', string>>;
@@ -46,6 +48,8 @@ export function DependentsPanel({
   const [message, setMessage] = useState('');
   const [summary, setSummary] = useState('');
   const [scanning, setScanning] = useState<{ message: string; percent: number } | null>(null);
+  /** a finished scan waiting for the user to say which person on the certificate is the worker */
+  const [picking, setPicking] = useState<{ scan: FrcScan; selected: number | null } | null>(null);
   const validCnic = cnic.replace(/\D/g, '').length === 13;
 
   // start the OCR engine in the background as soon as the form opens, so "Upload FRC" does not wait for it
@@ -74,35 +78,47 @@ export function DependentsPanel({
     setMessage('');
     setSummary('');
     setScanning({ message: 'Starting…', percent: 0 });
+    setPicking(null);
     try {
       const { scanFrc } = await import('../../frc/scanFrc');
       const result = await scanFrc(file, (m, percent) => setScanning({ message: m, percent }));
-      const a = result.applicant;
-      if (a) onApply({ fn: a.name, fa: a.fatherName, cn: a.cnic, dob: a.dob, gender: a.gender, ph: a.photo });
-      // keep rows the user typed in by hand; replace earlier scan / demo rows with this certificate's family
-      const manual = rows.filter((r) => r.source === 'Manual' && (r.name.trim() || r.cnic.trim()));
-      const scanned: DependentDraft[] = result.members.map((m) => {
-        const relation = m.relation === 'Family member' ? '' : m.relation;
-        const values = { name: m.name, relation, cnic: m.cnic, dob: m.dob };
-        const missing = (['name', 'relation', 'cnic', 'dob'] as const).filter((f) => !values[f]);
-        return { key: newKey(), ...values, gender: genderOf(relation), photo: m.photo, source: 'FRC', missing: [...missing] };
-      });
-      onRowsChange([...scanned, ...manual]);
-      const filled = a ? [a.name && 'name', a.cnic && 'CNIC', a.fatherName && 'father’s name', a.dob && 'date of birth', a.gender && 'gender', a.photo && 'photo'].filter(Boolean).join(', ') : '';
-      const gaps = scanned.reduce((n, r) => n + (r.missing?.length ?? 0), 0);
-      setSummary(
-        'Read in ' + result.seconds + ' s. ' +
-          (a ? 'Filled the employee form (' + filled + ') for ' + (a.name || 'the applicant') + '. ' : '') +
-          'Found ' + scanned.length + ' family member(s)' + (result.photosFound ? ' and ' + result.photosFound + ' photo(s)' : '') + '. ' +
-          (gaps ? gaps + ' value(s) could not be read and are highlighted. ' : '') +
-          (a && !a.gender ? 'Select the gender yourself. ' : '') +
-          'Scan complete: check every value against the certificate, correct anything misread and fill in what is missing, then click Save.',
-      );
+      // the user says who on the certificate is the worker; pre-select the person whose CNIC is already typed in
+      // the form, but only when exactly one person has it
+      const typed = cnic.replace(/\D/g, '');
+      const matches = typed.length === 13 ? result.people.flatMap((p, i) => (p.cnic.replace(/\D/g, '') === typed ? [i] : [])) : [];
+      setPicking({ scan: result, selected: matches.length === 1 ? matches[0] : null });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'The certificate could not be read.');
     } finally {
       setScanning(null);
     }
+  };
+
+  /** The chosen person fills the employee form; everyone else becomes a dependent, related to the worker. */
+  const applyWorker = (scan: FrcScan, index: number) => {
+    const w = scan.people[index];
+    onApply({ fn: w.name, fa: w.fatherName, cn: w.cnic, dob: w.dob, gender: w.gender, ph: w.photo });
+    // keep rows the user typed in by hand; replace earlier scan / demo rows with this certificate's family
+    const manual = rows.filter((r) => r.source === 'Manual' && (r.name.trim() || r.cnic.trim()));
+    const scanned: DependentDraft[] = scan.people
+      .filter((_, i) => i !== index)
+      .map((p) => {
+        const relation = relationToWorker(p.relation, p.gender, w.relation);
+        const values = { name: p.name, relation, cnic: p.cnic, dob: p.dob };
+        const missing = (['name', 'relation', 'cnic', 'dob'] as const).filter((f) => !values[f]);
+        return { key: newKey(), ...values, gender: p.gender || genderOf(relation), photo: p.photo, source: 'FRC', missing: [...missing] };
+      });
+    onRowsChange([...scanned, ...manual]);
+    setPicking(null);
+    const filled = [w.name && 'name', w.cnic && 'CNIC', w.fatherName && 'father’s name', w.dob && 'date of birth', w.gender && 'gender', w.photo && 'photo'].filter(Boolean).join(', ');
+    const gaps = scanned.reduce((n, r) => n + (r.missing?.length ?? 0), 0);
+    setSummary(
+      'Read in ' + scan.seconds + ' s. Filled the employee form (' + filled + ') for ' + (w.name || 'the worker') + '. ' +
+        'Added ' + scanned.length + ' dependent(s)' + (scan.photosFound ? ' with ' + scan.photosFound + ' photo(s) found' : '') + '. ' +
+        (gaps ? gaps + ' value(s) could not be read and are highlighted. ' : '') +
+        (!w.gender ? 'Select the gender yourself. ' : '') +
+        'Check every value against the certificate, correct anything misread and fill in what is missing, then click Save.',
+    );
   };
 
   return (
@@ -156,6 +172,58 @@ export function DependentsPanel({
       {message ? (
         <div role="alert" className="mb-2.5 text-danger text-[13px] bg-danger-bg border border-solid border-[#f3b9b3] rounded-lg py-2 px-3">
           {message}
+        </div>
+      ) : null}
+      {picking ? (
+        <div role="group" aria-labelledby="frc-worker-title" className="mb-2.5 rounded-lg border-2 border-solid border-essi-green bg-white p-3.5">
+          <div id="frc-worker-title" className="font-bold text-[15px] text-essi-dark">Who is the worker?</div>
+          <div className="text-[12px] text-ink-soft mb-2.5">
+            Found {picking.scan.people.length} people on this certificate. Select the person you are registering as the worker; everyone else is
+            added as their dependent.
+          </div>
+          <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
+            {picking.scan.people.map((p, i) => {
+              const on = picking.selected === i;
+              return (
+                <label
+                  key={i}
+                  className={
+                    'flex items-center gap-3 rounded-lg border border-solid p-2.5 cursor-pointer ' +
+                    (on ? 'border-essi-green bg-[#eef9f1] ring-2 ring-essi-green' : 'border-essi-line bg-white hover:border-essi-green')
+                  }
+                >
+                  <input type="radio" name="frc-worker" className="accent-essi-green" checked={on} onChange={() => setPicking({ ...picking, selected: i })} />
+                  {p.photo ? (
+                    <img src={p.photo} alt="" className="w-12 h-12 rounded-md object-cover flex-none" />
+                  ) : (
+                    <span className="w-12 h-12 rounded-md bg-essi-mint flex-none" aria-hidden="true" />
+                  )}
+                  <span className="min-w-0 text-[12px] leading-snug">
+                    <span className="block font-semibold text-[13px] text-ink truncate">{p.name || 'Name not read'}</span>
+                    <span className="block text-ink-soft">
+                      {p.relation === 'Self' ? 'FRC applicant' : p.relation || 'Relation not read'}
+                    </span>
+                    <span className="block text-ink-muted">
+                      {p.cnic || 'CNIC not read'} · {p.dob || 'DOB not read'}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-2.5 mt-3">
+            <button
+              type="button"
+              className="inline-flex items-center min-h-[42px] px-4 rounded-lg border-0 bg-essi-green text-white font-semibold text-[13px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={picking.selected === null}
+              onClick={() => picking.selected !== null && applyWorker(picking.scan, picking.selected)}
+            >
+              {picking.selected === null ? 'Select the worker' : 'Make ' + (picking.scan.people[picking.selected].name || 'this person') + ' the worker'}
+            </button>
+            <button type="button" className={BTN} onClick={() => setPicking(null)}>
+              Cancel
+            </button>
+          </div>
         </div>
       ) : null}
       {summary ? (

@@ -7,30 +7,65 @@
  */
 import { detectFaces, warmUpFaces, type FaceBox } from './faces';
 import { assembleFrc, extractCards, genderFromRelation, mergeCards, type FrcCards, type FrcPerson } from './frcParse';
-import { recognizeWords, warmUpOcr } from './ocr';
-import { loadPages, type PageImages } from './pages';
+import { genderOfRelation, type Gender } from './frcRelations';
 
-export interface FrcMember {
-  relation: string;
-  name: string;
-  cnic: string;
-  dob: string;
-  /** 200x200 JPEG data URL, when a face was found next to this person */
-  photo?: string;
+/**
+ * The FRC does not print the applicant's gender: take it from "Relation with HOF" (Son, Wife …), the spouse's
+ * label (Wife / Husband), or the children's cards (the applicant is their father or their mother).
+ */
+function applicantGender(a: FrcPerson, members: FrcPerson[], hofRelation: string): Gender {
+  const fromHof = genderFromRelation(hofRelation);
+  if (fromHof) return fromHof;
+  if (members.some((m) => /\bwife\b/i.test(m.relation))) return 'MALE';
+  if (members.some((m) => /\bhusband\b/i.test(m.relation))) return 'FEMALE';
+  if (!a.name) return '';
+  const children = members.filter((m) => /\b(son|daughter)\b/i.test(m.relation));
+  const mrs = /^\s*mrs\.?\s+/i; // "Mrs. Mansoor Ali" is Mansoor Ali's wife, so Mansoor Ali is the man
+  if (children.some((c) => sameName(c.fatherName, a.name) || (mrs.test(c.motherName) && sameName(c.motherName, a.name)))) return 'MALE';
+  if (children.some((c) => !mrs.test(c.motherName) && sameName(c.motherName, a.name))) return 'FEMALE';
+  return '';
 }
 
-export interface FrcApplicant {
+/** Letters only, without a "Mr." / "Mrs." title. */
+const nameKey = (s: string) => s.toLowerCase().replace(/^\s*(mrs?|miss|ms)\.?\s+/, '').replace(/[^a-z]/g, '');
+
+/** Same person's name, allowing a couple of misread letters ("Mansoor All Buriro" = "Mansoor Ali Buriro"). */
+export function sameName(x: string, y: string): boolean {
+  const a = nameKey(x);
+  const b = nameKey(y);
+  if (a.length < 3 || b.length < 3) return false;
+  if (a === b) return true;
+  if (Math.abs(a.length - b.length) > 2) return false;
+  // edit distance, stopping once it is clearly more than allowed
+  const allowed = Math.max(1, Math.floor(Math.min(a.length, b.length) / 8));
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    if (Math.min(...cur) > allowed) return false;
+    prev = cur;
+  }
+  return prev[b.length] <= allowed;
+}
+import { onOcrStartup, recognizeWords, warmUpOcr } from './ocr';
+import { loadPages, type PageImages } from './pages';
+
+/** One person on the certificate. */
+export interface FrcPersonFound {
+  /** relationship to the FRC applicant as printed ("Self" for the applicant, "Spouse", "Son" …; '' when not read) */
+  relation: string;
   name: string;
   fatherName: string;
   cnic: string;
   dob: string;
-  gender: 'MALE' | 'FEMALE' | '';
+  gender: Gender;
+  /** 200x200 JPEG data URL, when a face was found next to this person */
   photo?: string;
 }
 
 export interface FrcScan {
-  applicant: FrcApplicant | null;
-  members: FrcMember[];
+  /** everyone on the certificate; the FRC applicant first */
+  people: FrcPersonFound[];
   pages: number;
   /** how many people (applicant included) got a photo */
   photosFound: number;
@@ -100,12 +135,27 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
   warmUpScanner();
   onProgress('Opening the file…', 2);
   const pages = await loadPages(file);
+  // until the first word is read, show the engine's start-up stages (the first scan after opening the page waits for it)
+  let reading = false;
+  onOcrStartup((message) => {
+    if (!reading) onProgress(message, 4);
+  });
+  onProgress('Starting the text reader…', 3);
+  try {
+    return await readAll(pages, started, onProgress, () => (reading = true));
+  } finally {
+    onOcrStartup(null);
+  }
+}
+
+async function readAll(pages: PageImages[], started: number, onProgress: ScanProgress, onReading: () => void): Promise<FrcScan> {
 
   // Every page is always read three times (normal size, enlarged, high contrast). The passes run side by side on
   // the OCR workers and are merged, so each fills what the others misread. Nothing is shown until all are done.
   const PASSES = 3;
   const done = pages.map(() => new Array<number>(PASSES).fill(0));
   const report = () => {
+    onReading();
     const all = done.flat();
     const fraction = all.reduce((a, b) => a + b, 0) / all.length;
     const finished = all.filter((f) => f >= 1).length;
@@ -149,10 +199,20 @@ export async function scanFrc(file: File, onProgress: ScanProgress = () => undef
   }));
 
   const a = result.applicant;
+  const aGender = applicantGender(a, result.members, result.hofRelation);
+  const genderOf = (m: FrcPerson): Gender => genderOfRelation(m.relation) || (/\bspouse\b/i.test(m.relation) ? (aGender === 'MALE' ? 'FEMALE' : aGender === 'FEMALE' ? 'MALE' : '') : '');
   onProgress('Done', 100);
   return {
-    applicant: { name: a.name, fatherName: a.fatherName, cnic: a.cnic, dob: a.dob, gender: genderFromRelation(result.hofRelation), photo: photos.get(a) },
-    members: result.members.map((m) => ({ relation: m.relation, name: m.name, cnic: m.cnic, dob: m.dob, photo: photos.get(m) })),
+    people: [
+      { relation: 'Self', name: a.name, fatherName: a.fatherName, cnic: a.cnic, dob: a.dob, gender: aGender, photo: photos.get(a) },
+      ...result.members.map((m) => ({
+        relation: m.relation === 'Family member' ? '' : m.relation,
+        name: m.name,
+        // a child's "Father Name" is the applicant (or the spouse): use that card's name, which is read more reliably
+        fatherName: [a, ...result.members].find((x) => x !== m && sameName(x.name, m.fatherName))?.name || m.fatherName,
+        cnic: m.cnic, dob: m.dob, gender: genderOf(m), photo: photos.get(m),
+      })),
+    ],
     pages: pages.length,
     photosFound: photos.size,
     seconds: Math.round((performance.now() - started) / 100) / 10,
