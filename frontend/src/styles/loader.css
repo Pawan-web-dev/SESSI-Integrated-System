@@ -56,21 +56,6 @@
   }
 }
 
-.essi-loader-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 240px;
-  max-width: 100%;
-  padding: 26px 34px 22px;
-  text-align: center;
-  background: #fff;
-  border: 1px solid var(--color-essi-line);
-  border-radius: 16px;
-  box-shadow: var(--shadow-panel);
-}
-
 .essi-loader-ring {
   position: relative;
   width: 96px;
@@ -113,15 +98,6 @@
   border-radius: 50%;
 }
 
-.essi-loader-label {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-essi-dark);
-}
-.essi-loader-sub {
-  font-size: 12px;
-  color: var(--color-ink-muted);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .essi-loader-bar::before {

@@ -27,22 +27,19 @@ function useDelayedFlag(active: boolean, showAfter = 200, minShown = 500): boole
   return visible;
 }
 
-/** The loader itself: a green bar across the top and a centred card with the ESSI logo in a spinning ring. */
+/** The loader itself: a green bar across the top and the ESSI logo in a spinning ring, centred on the page. */
 export function LoaderView({ label }: { label: string }) {
   return (
     <>
       <div className="essi-loader-bar" aria-hidden="true" />
-      <div className="essi-loader-overlay" role="status" aria-live="polite" aria-busy="true">
-        <div className="essi-loader-card">
-          <div className="essi-loader-ring">
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-              <circle cx="50" cy="50" r="44" className="essi-loader-track" />
-              <circle cx="50" cy="50" r="44" className="essi-loader-arc" />
-            </svg>
-            <img src={logo} alt="" />
-          </div>
-          <div className="essi-loader-label">{label}</div>
-          <div className="essi-loader-sub">Please wait a moment</div>
+      {/* only the logo ring is shown; the label is still read out to screen readers */}
+      <div className="essi-loader-overlay" role="status" aria-live="polite" aria-busy="true" aria-label={label}>
+        <div className="essi-loader-ring">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="44" className="essi-loader-track" />
+            <circle cx="50" cy="50" r="44" className="essi-loader-arc" />
+          </svg>
+          <img src={logo} alt="" />
         </div>
       </div>
     </>
