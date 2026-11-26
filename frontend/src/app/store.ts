@@ -6,6 +6,7 @@
  *   dashboard     employer dashboard: open section, menus, messages
  *   admin         admin panel: list, filters, application under review
  *   documentViewer  uploaded document shown on screen (any page)
+ *   loader        manual "something is loading" tasks for the global loader (API calls are detected automatically)
  *   api           RTK Query cache: ALL server data (profile, employees, contributions, applications …)
  */
 import { combineReducers, configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
@@ -14,6 +15,7 @@ import adminReducer from '@/features/admin/adminSlice';
 import authReducer, { adminSignedIn, adminSignedOut, employerSignedIn, employerSignedOut, persistAuth } from '@/features/auth/authSlice';
 import dashboardReducer from '@/features/dashboard/dashboardSlice';
 import documentViewerReducer from '@/features/documents/documentViewerSlice';
+import loaderReducer from '@/features/loader/loaderSlice';
 import registrationReducer, { saveDraft } from '@/features/registration/registrationSlice';
 import { baseApi } from '@/services/api/baseApi';
 
@@ -23,6 +25,7 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   admin: adminReducer,
   documentViewer: documentViewerReducer,
+  loader: loaderReducer,
   [baseApi.reducerPath]: baseApi.reducer,
 });
 export type RootState = ReturnType<typeof rootReducer>;

@@ -222,3 +222,13 @@ computer, with no internet and no API:
 
 The OCR engine, English model and face-detector runtime are copied from `node_modules` into `public/ocr/` by
 `scripts/prepare-ocr-assets.mjs`, which runs automatically before `npm run dev`, `build` and `preview` (the folder is git-ignored, about 43 MB).
+
+## Global loader
+
+`src/components/ui/GlobalLoader.tsx` is mounted once in `App.tsx`. It shows a green bar across the top and a centred ESSI card
+(logo in a spinning ring) whenever something is loading or saving, and blocks the screen so a button cannot be pressed twice.
+
+- **API calls need nothing**: it follows RTK Query automatically. Saving shows an action message ("Saving employee…"); the messages are in
+  `src/features/loader/selectLoading.ts`. Refreshing data the screen already shows (polling) stays quiet.
+- **Other work** (not an API call): `useGlobalLoader(isBusy, 'Reading the file…')` from `src/features/loader/useGlobalLoader.ts`.
+- It appears only after 0.2 s and stays at least 0.5 s, so quick requests never flash. To exclude an endpoint, add its name to `SILENT_ENDPOINTS`.

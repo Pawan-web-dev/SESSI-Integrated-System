@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DocumentViewer } from '@/components/shared/DocumentViewer';
+import { GlobalLoader, PageLoader } from '@/components/ui/GlobalLoader';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { useAppSelector } from './hooks';
 import { ROUTES } from './routes';
@@ -16,7 +17,7 @@ const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPag
 export default function App() {
   const signedIn = useAppSelector((s) => !!s.auth.employer);
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path={ROUTES.home} element={signedIn ? <Navigate to={ROUTES.dashboard} replace /> : <LoginPage />} />
         <Route path={ROUTES.login} element={<LoginPage />} />
@@ -29,6 +30,8 @@ export default function App() {
       </Routes>
       {/* uploaded documents open here, over any page */}
       <DocumentViewer />
+      {/* shows while anything is loading or saving: every API call, page downloads and useGlobalLoader tasks */}
+      <GlobalLoader />
     </Suspense>
   );
 }
