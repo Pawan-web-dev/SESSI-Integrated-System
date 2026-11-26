@@ -14,6 +14,7 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 @import './portal.css' layer(components);
 @import './workspace.css' layer(components);
+@import './loader.css' layer(components);
 @import './print.css';
 
 /* ESSI design tokens -> Tailwind classes, e.g. bg-essi-green, text-ink-muted, border-essi-line */
