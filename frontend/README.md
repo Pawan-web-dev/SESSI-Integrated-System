@@ -210,3 +210,15 @@ optional branch. Example `100-91-000001` = Malir Directorate, Retail Shops, esta
 - **Industry change:** through *Company Profile → Change Requests* (needs a supporting document and ESSI
   approval); the change is written to the request's activity log and the EIN stays the same.
 - The EIN appears on the dashboard, company profile, receipts, F-4, F-4 declaration, C-1, F-5 and SMS/email notices.
+
+## Employee registration: scanning an FRC (offline)
+
+`Upload FRC` in Employee Registration reads a NADRA Family Registration Certificate (JPG / PNG / PDF) on the user's
+computer, with no internet and no API:
+
+1. **OCR** – Tesseract (WebAssembly) reads the text twice (normal and 2x size) and the results are merged.
+2. **Layout parser** (`src/features/dashboard/frc/frcParse.ts`) turns the words into people: name, CNIC, date of birth, relationship.
+3. **Face detector** – MediaPipe BlazeFace (`public/models/blaze_face_short_range.tflite`) finds each person's photo, cropped to 200x200.
+
+The OCR engine, English model and face-detector runtime are copied from `node_modules` into `public/ocr/` by
+`scripts/prepare-ocr-assets.mjs`, which runs automatically before `npm run dev`, `build` and `preview` (the folder is git-ignored, about 43 MB).

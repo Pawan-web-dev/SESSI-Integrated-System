@@ -35,3 +35,6 @@ frontend/.env
 frontend/.env.*
 !frontend/.env.example
 backend/storage/
+
+# local FRC samples for testing the scanner (personal data: never commit)
+frontend/public/test-frc/

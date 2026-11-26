@@ -24,6 +24,7 @@ import {
   busyChanged, changeRequestNoticeShown, changeRequestOpened, contributionSubmitted, employeeEditStarted, employeePanelOpened, f4Opened, f5Opened,
   groupToggled, messagesCleared, mobileMenuToggled, navigated, noticeShown, passwordChangedSet, receiptOpened, userMenuToggled, type EmployeePanel,
 } from '../dashboardSlice';
+import { draftsToInput, toDraft, type DependentDraft } from '@/features/dependents/dependentDraft';
 import { companyView, f4View, receiptView } from './documents';
 import { resizePhoto } from './photo';
 
@@ -149,6 +150,7 @@ export function useDashboardModel() {
   const setEditId = (id: number | null) => dispatch(employeeEditStarted(id));
   const setPwDone = (done: boolean) => dispatch(passwordChangedSet(done));
   const [form, setForm] = useState<Record<string, string>>({});
+  const [deps, setDeps] = useState<DependentDraft[]>([]);
   const [formErr, setFormErr] = useState('');
   const [pw, setPw] = useState<Record<string, string>>({});
   const [pwErr, setPwErr] = useState('');
@@ -221,6 +223,7 @@ export function useDashboardModel() {
       sk: e.skill_level || '', et: e.employment_type, wt: e.wage_type || '', pf: e.payment_frequency || '', dj: fromIsoDate(e.date_joined),
       mw: e.monthly_wage != null ? String(e.monthly_wage) : '', ba: e.bank_account || '',
     });
+    setDeps((e.dependents ?? []).map(toDraft));
     go('Employee Management|Register Employee');
   };
   const saveEmp = () => {
@@ -235,22 +238,29 @@ export function useDashboardModel() {
     if (bad(f.ds)) miss.push('Designation');
     if (bad(f.et)) miss.push('Employment Type');
     if (miss.length) return setFormErr('Please fill in: ' + miss.join(', ') + '.');
+    const cnicDigits = f.cn.replace(/\D/g, '');
+    if (employees.some((e) => e.cnic.replace(/\D/g, '') === cnicDigits && e.id !== editId)) return setFormErr('An employee with this CNIC is already registered.');
     const dob = toIsoDate(f.dob);
     const joined = toIsoDate(f.dj);
     if (dob === 'invalid' || joined === 'invalid') return setFormErr('Enter dates as DD/MM/YYYY, for example 12/03/1988.');
     const wage = (f.mw || '').replace(/[,\s]/g, '');
     if (wage && !/^\d+$/.test(wage)) return setFormErr('Monthly wages must be a whole number of rupees.');
+    const dependents = draftsToInput(deps);
+    if (typeof dependents === 'string') return setFormErr(dependents);
     const body: EmployeeInput = {
       full_name: f.fn.trim(), father_name: f.fa.trim(), gender: f.gender, cnic: f.cn.trim(), date_of_birth: dob, mobile: f.mb.trim(), designation: f.ds.trim(),
       skill_level: pick(f.sk), employment_type: f.et, wage_type: pick(f.wt), payment_frequency: pick(f.pf), date_joined: joined,
-      monthly_wage: wage ? Number(wage) : null, bank_account: (f.ba || '').trim() || null, photo: f.ph || null,
+      monthly_wage: wage ? Number(wage) : null, bank_account: (f.ba || '').trim() || null, photo: f.ph || null, dependents,
     };
     void run(async () => {
       const saved = editId ? await updateEmployee({ id: editId, body }).unwrap() : await createEmployee(body).unwrap();
       setForm({});
+      setDeps([]);
       setFormErr('');
       setEditId(null);
-      setSavedMsg('Employee ' + saved.full_name + (editId ? ' was updated.' : ' was saved and added to the list below.'));
+      const n = saved.dependents?.length ?? 0;
+      const verb = n ? ' were' : ' was';
+      setSavedMsg('Employee ' + saved.full_name + (n ? ' and ' + n + ' dependent(s)' : '') + verb + (editId ? ' updated.' : ' saved and added to the list below.'));
       go('Employee Management|Profile for Contribution');
     }, setFormErr);
   };
@@ -541,7 +551,7 @@ export function useDashboardModel() {
       /* employees */
       empRows, noEmp: empRows.length === 0, empNote: empRows.length ? `${empRows.length} employee(s) registered` : 'No employees registered yet.',
       pView: panel?.mode === 'view' && !!pr, pDel: panel?.mode === 'del' && !!pr, pSep: panel?.mode === 'sep' && !!pr, pName: pr?.full_name || '', pCnic: pr?.cnic || '',
-      pFields, pHasPh: !!pr?.photo, pPhoto: pr?.photo || '', closeP: () => setPanel(null),
+      pFields, pDeps: pr?.dependents ?? [], pHasPh: !!pr?.photo, pPhoto: pr?.photo || '', closeP: () => setPanel(null),
       delOk: () => { if (pr) void delEmp(pr); }, sepOk: () => { if (pr) void setStatus(pr, 'Separated'); }, editFromPanel: () => { if (pr) editEmp(pr); },
       regTitle: editId ? 'EDIT EMPLOYEE' : 'EMPLOYEE REGISTRATION', saveLabel: busy ? 'Saving…' : editId ? 'Update Employee' : 'Save Employee',
       fv_fn: fm.fn || '', fv_fa: fm.fa || '', fv_cn: fm.cn || '', fv_dob: fm.dob || '', fv_mb: fm.mb || '', fv_ds: fm.ds || '', fv_dj: fm.dj || '', fv_mw: fm.mw || '',
@@ -556,7 +566,37 @@ export function useDashboardModel() {
         resizePhoto(file, (url) => { setForm((f) => ({ ...f, ph: url })); setFormErr(''); }, setFormErr);
       },
       rmPhoto: () => setForm((f) => ({ ...f, ph: '' })), saveEmp,
-      cancelEmp: () => { setForm({}); setFormErr(''); setEditId(null); go('Employee Management|Profile for Contribution'); },
+      cancelEmp: () => { setForm({}); setDeps([]); setFormErr(''); setEditId(null); go('Employee Management|Profile for Contribution'); },
+      resetEmpForm: () => { setForm({}); setDeps([]); setFormErr(''); },
+      deps, setDeps,
+      // fill the form from a scanned FRC (only the values that were found)
+      applyFrc: (found: Partial<Record<'fn' | 'fa' | 'cn' | 'dob' | 'gender' | 'ph', string>>) => {
+        setForm((cur) => ({ ...cur, ...Object.fromEntries(Object.entries(found).filter(([, val]) => val)) }));
+        setFormErr('');
+      },
+      // bulk import (Excel / CSV / API): saves one employee at a time and reports what failed
+      existingCnics: employees.map((e) => e.cnic.replace(/\D/g, '')),
+      importEmployees: async (rows: EmployeeInput[]) => {
+        dispatch(busyChanged(true));
+        const failed: { name: string; message: string }[] = [];
+        let created = 0;
+        for (const body of rows) {
+          try {
+            await createEmployee(body).unwrap();
+            created++;
+          } catch (err) {
+            failed.push({ name: body.full_name, message: errorMessage(err) });
+          }
+        }
+        dispatch(busyChanged(false));
+        if (created) setSavedMsg(created + ' employee(s) were imported and added to the list below.');
+        return { created, failed };
+      },
+      openEmployeeList: () => go('Employee Management|Profile for Contribution'),
+      setFormError: setFormErr,
+      // duplicate check against the employees already registered (another record with the same CNIC)
+      cnicState: (fm.cn || '').replace(/\D/g, '').length !== 13 ? 'idle'
+        : employees.some((e) => e.cnic.replace(/\D/g, '') === (fm.cn || '').replace(/\D/g, '') && e.id !== editId) ? 'dup' : 'ok',
       formErr, hasErr: !!formErr, savedMsg, hasMsg: !!savedMsg,
 
       /* contributions */
@@ -596,7 +636,7 @@ export function useDashboardModel() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, employees, contributions, changes, notifications, documentsQ.data, industriesQ.data, previewQ.data, previewQ.error, receiptQ.data, f4Q.data, f5ReceiptQ.data,
-      sel, open, menuOpen, userMenu, form, editId, formErr, savedMsg, panel, pw, pwErr, pwDone, crForm, crErr, crMsg, viewCrId, doneInfo, busy, thisMonthDone, month]);
+      sel, open, menuOpen, userMenu, form, deps, editId, formErr, savedMsg, panel, pw, pwErr, pwDone, crForm, crErr, crMsg, viewCrId, doneInfo, busy, thisMonthDone, month]);
 
   const env: ViewEnv = {
     coName: profile?.name || '', empNo: profile?.ein || '', person: profile?.contact_person || '', dir: profile?.directorate || '',

@@ -48,6 +48,25 @@ class ChangePasswordIn(BaseModel):
 
 
 # ---------------------------------------------------------------- employees
+class DependentIn(BaseModel):
+    """A family member of the employee. `id` keeps an existing record when the list is saved again."""
+
+    id: int | None = None
+    name: str = Field(min_length=1, max_length=120)
+    relation: str = Field(min_length=1, max_length=40, examples=['Spouse'])
+    cnic: str | None = Field(default=None, max_length=30, description='CNIC or B-Form number, if the person has one')
+    date_of_birth: date | None = None
+    gender: str | None = Field(default=None, pattern='^(MALE|FEMALE|TRANSGENDER)$')
+    photo: str | None = Field(default=None, max_length=300_000, description='data:image/jpeg;base64,… (about 200x200)')
+    source: str = Field(default='Manual', pattern='^(FRC|Manual|NADRA)$')
+
+
+class DependentOut(DependentIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
 class EmployeeIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     father_name: str = Field(min_length=2, max_length=120)
@@ -64,6 +83,7 @@ class EmployeeIn(BaseModel):
     monthly_wage: int | None = Field(default=None, ge=0)
     bank_account: str | None = None
     photo: str | None = Field(default=None, max_length=300_000, description='data:image/jpeg;base64,… (about 200x200)')
+    dependents: list[DependentIn] | None = Field(default=None, max_length=30, description='Family members. Leave out to keep the saved list; send [] to remove all.')
 
 
 class EmployeeOut(EmployeeIn):
@@ -71,6 +91,7 @@ class EmployeeOut(EmployeeIn):
 
     id: int
     status: str
+    dependents: list[DependentOut] = []
 
 
 class EmployeeStatusIn(BaseModel):
