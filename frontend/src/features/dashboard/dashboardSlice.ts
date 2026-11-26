@@ -58,12 +58,13 @@ const dashboardSlice = createSlice({
   reducers: {
     navigated(state, action: PayloadAction<string>) {
       state.section = action.payload;
-      state.openGroups[action.payload.split('|')[0]] = true;
+      state.openGroups = { [action.payload.split('|')[0]]: true };
       state.mobileMenuOpen = false;
       state.userMenuOpen = false;
     },
     groupToggled(state, action: PayloadAction<string>) {
-      state.openGroups[action.payload] = !state.openGroups[action.payload];
+      // accordion: opening one group closes the others
+      state.openGroups = state.openGroups[action.payload] ? {} : { [action.payload]: true };
     },
     mobileMenuToggled(state) {
       state.mobileMenuOpen = !state.mobileMenuOpen;
