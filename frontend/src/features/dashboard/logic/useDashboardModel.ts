@@ -17,7 +17,7 @@ import { amountInWords as toWords, currentMonth, formatAmount, formatDate, forma
 import { printDocument } from '@/utils/print';
 import {
   useChangePasswordMutation, useCreateChangeRequestMutation, useCreateContributionMutation, useCreateEmployeeMutation, useDeleteEmployeeMutation,
-  useGetChangeRequestsQuery, useGetContributionsQuery, useGetDocumentsQuery, useGetEmployeesQuery, useGetF4Query, useGetNotificationsQuery,
+  useGetChangeRequestsQuery, useGetContributionsQuery, useGetDocumentsQuery, useGetEmployeesQuery, useGetF4Query, useGetNotificationsQuery, useMarkAllNotificationsReadMutation, useMarkNotificationReadMutation,
   useGetProfileQuery, useGetReceiptQuery, usePayChallanMutation, usePreviewContributionQuery, useSetEmployeeStatusMutation, useUpdateEmployeeMutation,
 } from '../employerApi';
 import {
@@ -127,6 +127,8 @@ export function useDashboardModel() {
   const profileQ = useGetProfileQuery();
   const employeesQ = useGetEmployeesQuery();
   const contributionsQ = useGetContributionsQuery();
+  const [markRead] = useMarkNotificationReadMutation();
+  const [markAllRead] = useMarkAllNotificationsReadMutation();
   const notificationsQ = useGetNotificationsQuery(undefined, { pollingInterval: 60000, refetchOnFocus: true });
   const documentsQ = useGetDocumentsQuery();
   const changesQ = useGetChangeRequestsQuery();
@@ -514,7 +516,8 @@ export function useDashboardModel() {
       canView: x.has_file && x.id !== null, view: () => (x.id !== null ? viewDocument(x.id, `${x.label} – ${x.file_name}`) : undefined),
       col: x.status === 'Verified' ? '#067a35' : x.file_name ? '#0b5fa8' : '#666',
     }));
-    const notifRows = notifications.map((n) => ({ text: `${n.subject}: ${n.body.replace(/^ESSI Sindh:\s*/, '')}`, time: formatDateTime(n.created_at), dot: '#067a35', hasAct: false }));
+    const notifRows = notifications.map((n) => ({ text: `${n.subject}: ${n.body.replace(/^ESSI Sindh:\s*/, '')}`, time: formatDateTime(n.created_at), dot: n.read_at ? '#c5d6cb' : '#067a35', unread: !n.read_at, open: () => { if (!n.read_at) markRead(n.id); }, hasAct: false }));
+    const unreadCount = notifications.filter((n) => !n.read_at).length;
 
     const fm = form;
     const crDefNow = CR_FIELDS.find((x) => x.label === crForm.label);
@@ -523,7 +526,7 @@ export function useDashboardModel() {
     return {
       /* navigation & layout */
       groups, selGroup: parts[0], selName: parts[1], sbOpen: menuOpen ? 'open' : '', bdOn: menuOpen ? 'on' : '', toggleMenu: () => dispatch(mobileMenuToggled()),
-      umToggle: () => dispatch(userMenuToggled()), umOpen: userMenu, logout, notifCount: notifications.length,
+      umToggle: () => dispatch(userMenuToggled()), umOpen: userMenu, logout, notifCount: unreadCount, goNotif: () => go('Notifications|Inbox'),
       goHome: () => go('Dashboard|Overview'), goCS: () => go('Dashboard|Contribution Summary'), goReg: () => { resetForms(); go('Employee Management|Register Employee'); },
       goProf: () => go('Employee Management|Profile for Contribution'), goMC: () => go('Monthly Contributions|Monthly Contribution'),
       goCC: () => go('Monthly Contributions|Create Contribution'), goDone: () => go('Monthly Contributions|Submitted'), goChallan: () => go('Challans & Payments|Generate Challan'),
@@ -615,7 +618,7 @@ export function useDashboardModel() {
       receipt: receiptView(receiptQ.data), f4Form: f4View(f4Q.data), company: companyView(p),
 
       /* notifications */
-      notifRows,
+      notifRows, unreadCount, markAllRead: () => { markAllRead(); },
 
       /* change requests */
       crRows, noCr: crRows.length === 0, hasD: !!dr, d, crMsg, hasCrMsg: !!crMsg, crErr, hasCrErr: !!crErr,

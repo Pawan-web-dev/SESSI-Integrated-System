@@ -12,6 +12,14 @@ export const employerApi = baseApi.injectEndpoints({
     getProfile: build.query<EmployerProfile, void>({ query: () => '/employer/me', providesTags: ['Profile'] }),
     getDashboard: build.query<DashboardSummary, void>({ query: () => '/employer/dashboard', providesTags: ['Dashboard'] }),
     getNotifications: build.query<Notification[], void>({ query: () => '/employer/notifications', providesTags: ['Notifications'] }),
+    markNotificationRead: build.mutation<Notification, number>({
+      query: (id) => ({ url: `/employer/notifications/${id}/read`, method: 'POST' }),
+      invalidatesTags: ['Notifications'],
+    }),
+    markAllNotificationsRead: build.mutation<Message, void>({
+      query: () => ({ url: '/employer/notifications/read-all', method: 'POST' }),
+      invalidatesTags: ['Notifications'],
+    }),
     getDocuments: build.query<EmployerDocument[], void>({ query: () => '/employer/documents', providesTags: ['Documents'] }),
     changePassword: build.mutation<Message, { current_password: string; new_password: string }>({
       query: (body) => ({ url: '/employer/password', method: 'POST', body }),
@@ -62,7 +70,7 @@ export const employerApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetProfileQuery, useGetDashboardQuery, useGetNotificationsQuery, useGetDocumentsQuery, useChangePasswordMutation,
+  useGetProfileQuery, useGetDashboardQuery, useGetNotificationsQuery, useMarkNotificationReadMutation, useMarkAllNotificationsReadMutation, useGetDocumentsQuery, useChangePasswordMutation,
   useGetEmployeesQuery, useCreateEmployeeMutation, useUpdateEmployeeMutation, useSetEmployeeStatusMutation, useDeleteEmployeeMutation,
   useGetContributionsQuery, usePreviewContributionQuery, useCreateContributionMutation, useGetF4Query,
   useGetChallansQuery, usePayChallanMutation, useGetReceiptQuery, useGetChangeRequestsQuery, useCreateChangeRequestMutation,

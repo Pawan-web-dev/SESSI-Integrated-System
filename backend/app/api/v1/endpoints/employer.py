@@ -1,7 +1,9 @@
 """Signed-in employer: profile, employees, contributions (F-4 / C-1), challans, receipts, change requests."""
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Query, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.api.deps import DB, CurrentEmployer
 from app.schemas.common import Message
@@ -46,6 +48,26 @@ def notifications(session: CurrentEmployer, db: DB):
     """SMS / e-mail messages sent to this employer, newest first."""
     stmt = select(OutboxMessage).where(OutboxMessage.employer_id == session.employer.id).order_by(OutboxMessage.id.desc()).limit(100)
     return db.scalars(stmt).all()
+
+
+@router.post('/notifications/read-all', response_model=Message, tags=['Employer'])
+def mark_all_notifications_read(session: CurrentEmployer, db: DB):
+    db.execute(update(OutboxMessage).where(OutboxMessage.employer_id == session.employer.id, OutboxMessage.read_at.is_(None))
+               .values(read_at=datetime.now(timezone.utc)))
+    db.commit()
+    return Message(message='All notifications marked as read.')
+
+
+@router.post('/notifications/{notification_id}/read', response_model=NotificationOut, tags=['Employer'])
+def mark_notification_read(notification_id: int, session: CurrentEmployer, db: DB):
+    n = db.scalars(select(OutboxMessage).where(OutboxMessage.id == notification_id, OutboxMessage.employer_id == session.employer.id)).first()
+    if not n:
+        raise NotFound('Notification not found.')
+    if n.read_at is None:
+        n.read_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(n)
+    return n
 
 
 def _application(session, db) -> RegistrationApplication | None:

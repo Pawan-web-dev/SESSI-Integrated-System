@@ -101,3 +101,17 @@ def test_preview_notifications_documents(client, admin_headers):
     assert 'Registration approved' in subjects
     docs = {d['doc_type']: d for d in client.get(f'{API}/employer/documents', headers=h).json()}
     assert docs['secp']['status'] == 'Verified' and docs['gas']['status'] == 'Not provided'
+
+
+def test_notifications_read_state(client, admin_headers):
+    _, h = register_and_approve(client, admin_headers, 1)
+    _, h2 = register_and_approve(client, admin_headers, 2)
+    items = client.get(f'{API}/employer/notifications', headers=h).json()
+    assert items and all(n['read_at'] is None for n in items)
+    r = client.post(f'{API}/employer/notifications/{items[0]["id"]}/read', headers=h)
+    assert r.status_code == 200 and r.json()['read_at'] is not None
+    # another employer cannot touch it
+    assert client.post(f'{API}/employer/notifications/{items[0]["id"]}/read', headers=h2).status_code == 404
+    assert client.post(f'{API}/employer/notifications/read-all', headers=h).status_code == 200
+    assert all(n['read_at'] for n in client.get(f'{API}/employer/notifications', headers=h).json())
+    assert any(n['read_at'] is None for n in client.get(f'{API}/employer/notifications', headers=h2).json())

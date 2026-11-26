@@ -219,9 +219,11 @@ class ContributionPreviewOut(BaseModel):
 class NotificationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     subject: str
     body: str
     created_at: datetime
+    read_at: datetime | None = None
 
 
 class DashboardOut(BaseModel):

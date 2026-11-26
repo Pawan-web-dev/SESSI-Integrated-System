@@ -1,8 +1,29 @@
 /* Employer dashboard – top banner (logo, notifications, user menu) (markup taken from the approved design). */
+import { useEffect, useRef } from 'react';
 import logo from '@/assets/images/essi-logo.png';
 import type { ViewProps } from '@/types/view';
 
 export function DashboardHeader({ v, P }: ViewProps) {
+  const menuRef = useRef<HTMLSpanElement>(null);
+  const { umOpen, umToggle } = v;
+
+  /* close the user menu on a click/tap anywhere outside it, or on Escape */
+  useEffect(() => {
+    if (!umOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) umToggle();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') umToggle(); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [umOpen, umToggle]);
+
   return (
     <>
       <header className="hd relative @container aspect-[1536/208] w-full text-white">
@@ -15,22 +36,24 @@ export function DashboardHeader({ v, P }: ViewProps) {
           {"Sindh"}
         </div>
         <div className="hr absolute right-[1.6%] top-0 h-[50%] flex items-center gap-3.5 [font-size:max(12px,.95cqw)]">
-          <svg width={"26"} height={"26"} viewBox={"0 0 24 24"} fill={"#fff"} aria-label={"Home"} role={"img"}>
-            <path d={"M12 3l10 9h-3v9h-5v-6h-4v6H5v-9H2z"}>
-            </path>
-          </svg>
+          <button type={"button"} onClick={v.goHome} aria-label={"Home"} className="relative min-w-[44px] min-h-[44px] bg-transparent border-0 text-white p-0 cursor-pointer inline-flex items-center justify-center">
+            <svg width={"26"} height={"26"} viewBox={"0 0 24 24"} fill={"#fff"} aria-hidden={"true"}>
+              <path d={"M12 3l10 9h-3v9h-5v-6h-4v6H5v-9H2z"}>
+              </path>
+            </svg>
+          </button>
           <span className="w-[2px] h-[28px] bg-white">
           </span>
-          <button className="relative min-w-[44px] min-h-[44px] bg-transparent border-0 text-white p-0" aria-label={"Notifications"}>
+          <button className="relative min-w-[44px] min-h-[44px] bg-transparent border-0 text-white p-0" aria-label={v.notifCount ? `Notifications, ${v.notifCount} unread` : "Notifications"} onClick={v.goNotif}>
             <svg width={"26"} height={"26"} viewBox={"0 0 24 24"} fill={"#fff"} aria-hidden={"true"}>
               <path d={"M12 22a2.2 2.2 0 002.2-2.2H9.8A2.2 2.2 0 0012 22zm7-6V11a7 7 0 00-5.5-6.8V3.5a1.5 1.5 0 00-3 0v.7A7 7 0 005 11v5l-2 2v1h18v-1z"}>
               </path>
             </svg>
-            <span className="absolute top-0.5 right-0.5 bg-[#e11] rounded-[10px] text-[11px] font-bold py-px px-1.5">
-              {v.notifCount}
-            </span>
+            {v.notifCount > 0 ? (<span className="absolute top-0.5 right-0.5 bg-[#e11] rounded-[10px] text-[11px] font-bold py-px px-1.5">
+              {v.notifCount > 99 ? '99+' : v.notifCount}
+            </span>) : null}
           </button>
-          <span className="hn relative">
+          <span className="hn relative" ref={menuRef}>
             <button type={"button"} aria-haspopup={"true"} onClick={v.umToggle} className="bg-transparent border-0 text-white [font:inherit] cursor-pointer min-h-[44px] py-0 px-1">
               {P.coName}{" ▾"}
             </button>

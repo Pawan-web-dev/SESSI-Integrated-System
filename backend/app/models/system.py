@@ -36,6 +36,8 @@ class OutboxMessage(TimestampMixin, Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[str | None] = mapped_column(String(300))
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # when the employer opened it in the portal inbox (NULL = unread)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AuditLog(TimestampMixin, Base):
