@@ -15,10 +15,12 @@ export function DashboardHeader({ v, P }: ViewProps) {
           {"Sindh"}
         </div>
         <div className="hr absolute right-[1.6%] top-0 h-[50%] flex items-center gap-3.5 [font-size:max(12px,.95cqw)]">
-          <svg width={"26"} height={"26"} viewBox={"0 0 24 24"} fill={"#fff"} aria-label={"Home"} role={"img"}>
-            <path d={"M12 3l10 9h-3v9h-5v-6h-4v6H5v-9H2z"}>
-            </path>
-          </svg>
+          <button type={"button"} onClick={v.goHome} aria-label={"Home"} className="relative min-w-[44px] min-h-[44px] bg-transparent border-0 text-white p-0 cursor-pointer inline-flex items-center justify-center">
+            <svg width={"26"} height={"26"} viewBox={"0 0 24 24"} fill={"#fff"} aria-hidden={"true"}>
+              <path d={"M12 3l10 9h-3v9h-5v-6h-4v6H5v-9H2z"}>
+              </path>
+            </svg>
+          </button>
           <span className="w-[2px] h-[28px] bg-white">
           </span>
           <button className="relative min-w-[44px] min-h-[44px] bg-transparent border-0 text-white p-0" aria-label={v.notifCount ? `Notifications, ${v.notifCount} unread` : "Notifications"} onClick={v.goNotif}>
