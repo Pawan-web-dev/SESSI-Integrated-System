@@ -6,7 +6,7 @@ from app.models.employer import EinRegistry, EinSequence, Employer, EmployerUser
 from app.models.master import Directorate, DirectorateDistrict, IndustryClassification
 from app.models.registration import ApplicationDocument, ApplicationEvent, RegistrationApplication
 from app.models.system import AdminUser, AuditLog, OutboxMessage
-from app.models.workforce import Employee, EmployeeDependent
+from app.models.workforce import Employee, EmployeeDependent, Worker, WorkerSequence
 
 __all__ = [
     'AdminUser',
@@ -31,4 +31,6 @@ __all__ = [
     'OutboxMessage',
     'RegistrationApplication',
     'StoredFile',
+    'Worker',
+    'WorkerSequence',
 ]

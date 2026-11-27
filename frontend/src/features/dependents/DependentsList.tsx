@@ -1,4 +1,4 @@
-/** Read-only list of an employee's saved dependents (cards with photo, relationship, CNIC and date of birth). */
+/** Read-only list of an employee's saved dependents (cards with photo, relationship, family-member number, CNIC and date of birth). */
 import type { Dependent } from '@/services/api/types';
 
 const date = (iso: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
@@ -23,6 +23,7 @@ export function DependentsList({ items, title = 'Dependents' }: { items: Depende
               <div className="min-w-0">
                 <div className="font-semibold text-[14px] truncate">{d.name}</div>
                 <div className="text-[12px] text-essi-green font-semibold">{d.relation}</div>
+                {d.worker_no ? <div className="text-[12px] font-mono text-essi-dark">{d.worker_no}</div> : null}
                 <div className="text-[12px] text-ink-muted">
                   {d.cnic || 'No CNIC'} · DOB {date(d.date_of_birth)}
                 </div>

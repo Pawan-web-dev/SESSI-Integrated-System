@@ -208,10 +208,14 @@ export interface DependentInput {
 }
 export interface Dependent extends DependentInput {
   id: number;
+  /** the worker's number plus /01, /02 … */
+  worker_no?: string | null;
 }
 export interface Employee extends Omit<EmployeeInput, 'dependents'> {
   id: number;
   status: 'Active' | 'Inactive' | 'Separated';
+  /** permanent ESSI worker number W-YY-DDD-NNNNNN-C */
+  worker_no: string | null;
   dependents: Dependent[];
 }
 
@@ -255,6 +259,7 @@ export interface AdminEmployer {
 }
 export interface AdminWorker {
   id: number;
+  worker_no: string | null;
   full_name: string;
   father_name: string;
   cnic: string;

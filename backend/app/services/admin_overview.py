@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import Challan, ChangeRequest, Contribution, Employee, EmployeeDependent, Employer, RegistrationApplication
+from app.models import Challan, ChangeRequest, Contribution, Employee, EmployeeDependent, Employer, RegistrationApplication, Worker
 from app.models.change_request import PENDING_REVIEW
 from app.services.errors import NotFound
 
@@ -118,24 +118,26 @@ def employer_detail(db: Session, employer_id: int) -> dict:
 
 def _worker_row(emp: Employee, employer: Employer, dependents: int) -> dict:
     return {
-        'id': emp.id, 'full_name': emp.full_name, 'father_name': emp.father_name, 'cnic': emp.cnic, 'gender': emp.gender, 'mobile': emp.mobile,
+        'id': emp.id, 'worker_no': emp.worker_no, 'full_name': emp.full_name, 'father_name': emp.father_name, 'cnic': emp.cnic, 'gender': emp.gender, 'mobile': emp.mobile,
         'designation': emp.designation, 'employment_type': emp.employment_type, 'status': emp.status, 'photo': emp.photo,
         'employer_id': employer.id, 'employer_name': employer.name, 'employer_ein': employer.ein, 'dependents': dependents,
     }
 
 
 def list_workers(db: Session, q: str = '', employer_id: int | None = None, status: str | None = None, offset: int = 0, limit: int = 50) -> dict:
-    stmt = select(Employee, Employer).join(Employer, Employer.id == Employee.employer_id)
+    stmt = select(Employee, Employer).join(Employer, Employer.id == Employee.employer_id).outerjoin(Worker, Worker.id == Employee.worker_id)
     if employer_id:
         stmt = stmt.where(Employee.employer_id == employer_id)
     if status:
         stmt = stmt.where(Employee.status == status)
     if q.strip():
         like = f'%{q.strip()}%'
-        digits = ''.join(ch for ch in q if ch.isdigit())
-        conds = [Employee.full_name.ilike(like), Employee.father_name.ilike(like), Employee.cnic.ilike(like), Employer.name.ilike(like)]
+        digits = ''.join(ch for ch in q.split('/')[0] if ch.isdigit())  # a family member's /01 is not part of the search
+        conds = [Employee.full_name.ilike(like), Employee.father_name.ilike(like), Employee.cnic.ilike(like), Employer.name.ilike(like),
+                 Worker.worker_no.ilike(f'%{q.strip().split("/")[0]}%')]
         if len(digits) >= 4:
             conds.append(func.replace(Employee.cnic, '-', '').like(f'%{digits}%'))
+            conds.append(func.replace(Worker.worker_no, '-', '').like(f'%{digits}%'))
         stmt = stmt.where(or_(*conds))
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.execute(stmt.order_by(Employee.id.desc()).offset(offset).limit(limit)).all()

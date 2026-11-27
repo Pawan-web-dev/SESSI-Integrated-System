@@ -14,6 +14,8 @@ export interface DependentDraft {
   gender: string;
   photo?: string;
   source: DependentSource;
+  /** family-member number (worker number + /01 …), shown once the row is saved */
+  workerNo?: string;
   /** fields the FRC scan could not read; highlighted until the user fills them in */
   missing?: ('name' | 'relation' | 'cnic' | 'dob')[];
 }
@@ -49,7 +51,7 @@ export function genderOf(relation: string): string {
 
 export const toDraft = (d: Dependent): DependentDraft => ({
   key: 'saved-' + d.id, id: d.id, name: d.name, relation: d.relation, cnic: d.cnic || '', dob: isoToSlash(d.date_of_birth), gender: d.gender || '',
-  photo: d.photo || undefined, source: d.source,
+  photo: d.photo || undefined, source: d.source, workerNo: d.worker_no || undefined,
 });
 
 /** Check the rows and turn them into the API shape, or return an error message for the user. */

@@ -376,7 +376,7 @@ export function useDashboardModel() {
     };
     const cards = CARD_STYLE.map(([name, ic, fg, bg]) => ({ name, val: cardValues[name], ic, fg, bg }));
     const empRows = employees.map((e, i) => ({
-      n: String(i + 1), name: e.full_name, cnic: e.cnic, des: e.designation, type: e.employment_type, status: e.status, photo: e.photo || '',
+      n: String(i + 1), name: e.full_name, wno: e.worker_no || '-', cnic: e.cnic, des: e.designation, type: e.employment_type, status: e.status, photo: e.photo || '',
       hasPh: !!e.photo, noPh: !e.photo, scol: STATUS_COLOR[e.status] || '#444444', col: STATUS_COLOR[e.status] || '#444444',
       mark: e.status === 'Active' ? '✓' : e.status === 'Inactive' ? '✗' : '-', canTg: e.status !== 'Separated', noTg: e.status === 'Separated',
       vw: () => setPanel({ mode: 'view', id: e.id }),
@@ -553,7 +553,7 @@ export function useDashboardModel() {
 
       /* employees */
       empRows, noEmp: empRows.length === 0, empNote: empRows.length ? `${empRows.length} employee(s) registered` : 'No employees registered yet.',
-      pView: panel?.mode === 'view' && !!pr, pDel: panel?.mode === 'del' && !!pr, pSep: panel?.mode === 'sep' && !!pr, pName: pr?.full_name || '', pCnic: pr?.cnic || '',
+      pView: panel?.mode === 'view' && !!pr, pDel: panel?.mode === 'del' && !!pr, pSep: panel?.mode === 'sep' && !!pr, pName: pr?.full_name || '', pCnic: pr?.cnic || '', pWno: pr?.worker_no || '',
       pFields, pDeps: pr?.dependents ?? [], pHasPh: !!pr?.photo, pPhoto: pr?.photo || '', closeP: () => setPanel(null),
       delOk: () => { if (pr) void delEmp(pr); }, sepOk: () => { if (pr) void setStatus(pr, 'Separated'); }, editFromPanel: () => { if (pr) editEmp(pr); },
       regTitle: editId ? 'EDIT EMPLOYEE' : 'EMPLOYEE REGISTRATION', saveLabel: busy ? 'Saving…' : editId ? 'Update Employee' : 'Save Employee',

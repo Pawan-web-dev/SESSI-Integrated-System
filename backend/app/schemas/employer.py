@@ -65,6 +65,7 @@ class DependentOut(DependentIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    worker_no: str | None = Field(default=None, description="The worker's number plus /01, /02 …", examples=['W-26-102-004573-6/01'])
 
 
 class EmployeeIn(BaseModel):
@@ -91,6 +92,7 @@ class EmployeeOut(EmployeeIn):
 
     id: int
     status: str
+    worker_no: str | None = Field(default=None, description='Permanent ESSI worker number W-YY-DDD-NNNNNN-C', examples=['W-26-102-004573-6'])
     dependents: list[DependentOut] = []
 
 
