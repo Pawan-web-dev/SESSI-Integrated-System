@@ -26,6 +26,11 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                 <span className="font-normal text-[13px] text-ink-muted">
                   {"("}{v.pCnic}{")"}
                 </span>
+                {v.pWno ? (<>
+                  <div className="font-mono font-semibold text-[14px] text-essi-green mt-0.5">
+                    {"Worker No. "}{v.pWno}
+                  </div>
+                </>) : null}
               </div>
             </div>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-y-1 gap-x-4 mt-2.5">
@@ -94,13 +99,16 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
             </button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse"><tbody>
+            <table className="w-full min-w-[1120px] border-collapse"><tbody>
               <tr className="bg-essi-mint">
                 <th className="p-2.5 border border-solid border-[#d9d4a8] text-left text-[13px] font-semibold">
                   {"Sr. No."}
                 </th>
                 <th className="p-2.5 border border-solid border-[#d9d4a8] text-left text-[13px] font-semibold">
                   {"Name of Employee"}
+                </th>
+                <th className="p-2.5 border border-solid border-[#d9d4a8] text-left text-[13px] font-semibold">
+                  {"Worker No."}
                 </th>
                 <th className="p-2.5 border border-solid border-[#d9d4a8] text-left text-[13px] font-semibold">
                   {"CNIC No."}
@@ -139,6 +147,8 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                 <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
                 </td>
                 <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
+                </td>
+                <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
                   <input aria-label={"Filter CNIC No."} className="w-full min-h-[32px] box-border border border-solid border-[#bbb] rounded" />
                 </td>
                 <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
@@ -166,7 +176,7 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
               </tr>
               {v.noEmp ? (<>
                 <tr>
-                  <td colSpan={12} className="border border-solid border-[#e6e2c4] text-[13px] text-ink-muted p-4.5">
+                  <td colSpan={13} className="border border-solid border-[#e6e2c4] text-[13px] text-ink-muted p-4.5">
                     {"No records to display. Click “Add New Employee for Contribution” to register your first employee."}
                   </td>
                 </tr>
@@ -195,6 +205,9 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                         {e.name}
                       </span>
                     </div>
+                  </td>
+                  <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px] font-mono whitespace-nowrap">
+                    {e.wno}
                   </td>
                   <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
                     {e.cnic}

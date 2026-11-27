@@ -8,6 +8,7 @@ from app.schemas.employer import DependentIn, EmployeeIn
 from app.services.errors import NotFound, ServiceError
 from app.services.formatting import format_cnic, format_mobile
 from app.services.notify import audit
+from app.services.worker_no import link_employee, number_dependents
 
 
 def list_employees(db: Session, employer: Employer) -> list[Employee]:
@@ -77,6 +78,7 @@ def add_dependent(db: Session, emp: Employee, data: DependentIn, actor: str) -> 
     row = EmployeeDependent(**_clean_dependent(data))
     emp.dependents.append(row)
     db.flush()
+    number_dependents(db, emp)
     audit(db, actor, 'dependent.created', 'employee', emp.id, {'dependent': row.id, 'name': row.name})
     db.commit()
     return row
@@ -102,7 +104,9 @@ def create_employee(db: Session, employer: Employer, data: EmployeeIn, actor: st
         replace_dependents(emp, data.dependents)
     db.add(emp)
     db.flush()
-    audit(db, actor, 'employee.created', 'employee', emp.id, {'cnic': emp.cnic})
+    link_employee(db, employer, emp, actor)  # an existing worker (same CNIC) keeps their number; a new one gets one
+    number_dependents(db, emp)
+    audit(db, actor, 'employee.created', 'employee', emp.id, {'cnic': emp.cnic, 'worker_no': emp.worker_no})
     db.commit()
     return emp
 
@@ -112,6 +116,9 @@ def update_employee(db: Session, employer: Employer, emp: Employee, data: Employ
         setattr(emp, key, value)
     if data.dependents is not None:
         replace_dependents(emp, data.dependents)
+    db.flush()
+    link_employee(db, employer, emp, actor)
+    number_dependents(db, emp)
     audit(db, actor, 'employee.updated', 'employee', emp.id)
     db.commit()
     return emp

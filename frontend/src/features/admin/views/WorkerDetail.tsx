@@ -58,6 +58,7 @@ export function WorkerDetail({ id }: { id: number }) {
               </button>{' '}
               <span className="font-mono text-[12px]">({w.employer_ein})</span>
             </div>
+            {w.worker_no ? <div className="mt-1 font-mono text-[15px] font-semibold text-essi-green">Worker No. {w.worker_no}</div> : null}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-/** Admin: workers of every establishment (search by name / CNIC / establishment) with their number of dependents. */
+/** Admin: workers of every establishment (search by name / CNIC / worker number / establishment) with their number of dependents. */
 import { useDeferredValue, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Alert } from '@/components/ui/Alert';
@@ -13,10 +13,10 @@ const PAGE = 25;
 
 export function WorkersTable({ rows, showEmployer = true, onOpen }: { rows: AdminWorker[]; showEmployer?: boolean; onOpen: (id: number) => void }) {
   const dispatch = useAppDispatch();
-  const heads = ['Employee', 'CNIC', ...(showEmployer ? ['Establishment'] : []), 'Designation', 'Type', 'Dependents', 'Status', ''];
+  const heads = ['Employee', 'Worker No.', 'CNIC', ...(showEmployer ? ['Establishment'] : []), 'Designation', 'Type', 'Dependents', 'Status', ''];
   return (
     <div className="overflow-x-auto">
-      <table className={TABLE + ' min-w-[820px]'}>
+      <table className={TABLE + ' min-w-[960px]'}>
         <thead>
           <tr>
             {heads.map((h) => (
@@ -40,6 +40,7 @@ export function WorkersTable({ rows, showEmployer = true, onOpen }: { rows: Admi
                   </div>
                 </div>
               </td>
+              <td className={TD + ' whitespace-nowrap font-mono text-[13px] font-semibold text-essi-dark'}>{w.worker_no || '—'}</td>
               <td className={TD + ' whitespace-nowrap font-mono text-[13px]'}>{w.cnic}</td>
               {showEmployer ? (
                 <td className={TD}>
@@ -95,7 +96,7 @@ function WorkerList() {
   return (
     <Panel>
       <div className="flex flex-wrap gap-3 mb-4">
-        <SearchBox value={q} onChange={(v) => { setQ(v); setPage(0); }} placeholder="Search by name, father’s name, CNIC or establishment" />
+        <SearchBox value={q} onChange={(v) => { setQ(v); setPage(0); }} placeholder="Search by name, father’s name, CNIC, worker no. or establishment" />
         <FilterSelect label="Status" value={status} onChange={(v) => { setStatus(v); setPage(0); }} options={[['', 'All statuses'], ['Active', 'Active'], ['Inactive', 'Inactive'], ['Separated', 'Separated']]} />
         <span className="self-center text-[13px] text-ink-muted">{isFetching ? 'Loading…' : `${total} employee(s)`}</span>
       </div>

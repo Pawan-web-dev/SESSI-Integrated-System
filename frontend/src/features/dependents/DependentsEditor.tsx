@@ -176,6 +176,7 @@ export function DependentsEditor({
                   </td>
                   <td className={TD}>
                     <input aria-label={`Dependent ${i + 1} name`} className={cls(r, 'name')} value={r.name} disabled={disabled} placeholder="Full name" onChange={(e) => update(r.key, { name: e.target.value })} />
+                    {r.workerNo ? <div className="mt-1 text-[12px] font-mono text-essi-dark" title="Family-member number">{r.workerNo}</div> : null}
                   </td>
                   <td className={TD}>
                     <RelationPicker

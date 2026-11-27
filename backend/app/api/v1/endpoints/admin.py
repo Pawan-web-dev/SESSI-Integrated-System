@@ -46,7 +46,7 @@ def get_employer(employer_id: int, admin: CurrentAdmin, db: DB):
 def list_workers(admin: CurrentAdmin, db: DB, q: str = Query('', max_length=100), employer_id: int | None = None,
                  status: str | None = Query(None, pattern='^(Active|Inactive|Separated)$'),
                  offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=200)):
-    """Workers of every establishment. `q` matches name, father's name, CNIC (with or without dashes) or establishment."""
+    """Workers of every establishment. `q` matches name, father's name, CNIC (with or without dashes), worker number or establishment."""
     return admin_overview.list_workers(db, q, employer_id, status, offset, limit)
 
 
