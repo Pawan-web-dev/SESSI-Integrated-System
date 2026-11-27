@@ -63,6 +63,14 @@ def _norm(text: str | None) -> str:
     return ''.join(ch for ch in (text or '').lower() if ch.isalnum())
 
 
+def _same_person(a: tuple, b: tuple) -> bool:
+    """(cnic, name, relation): two of the three agree (same rule as services/worker_no._same_person)."""
+    cnic = bool(_norm(a[0])) and _norm(a[0]) == _norm(b[0])
+    name = _norm(a[1]) == _norm(b[1])
+    relation = _norm(a[2]) == _norm(b[2])
+    return (name and (cnic or relation)) or (cnic and relation)
+
+
 def _number_existing() -> None:
     conn = op.get_bind()
     employees = conn.execute(sa.text(
@@ -85,13 +93,15 @@ def _number_existing() -> None:
             w = workers[cnic] = {'id': worker_id, 'last_member_no': 0, 'members': []}
         conn.execute(sa.text('UPDATE employees SET worker_id = :w WHERE id = :e'), {'w': w['id'], 'e': emp_id})
 
+        taken: set[int] = set()  # each row of one employee is a different person
+        earlier = list(w['members'])  # family members saved under the worker's other employers
         for dep_id, dcnic, name, relation in conn.execute(sa.text(
                 'SELECT id, cnic, name, relation FROM employee_dependents WHERE employee_id = :e ORDER BY id'), {'e': emp_id}).all():
-            same = next((no for c, n, r, no in w['members'] if (_norm(dcnic) and _norm(c) == _norm(dcnic))
-                         or (_norm(n) == _norm(name) and _norm(r) == _norm(relation))), None)
+            same = next((no for c, n, r, no in earlier if no not in taken and _same_person((c, n, r), (dcnic, name, relation))), None)
             if same is None:
                 w['last_member_no'] += 1
                 same = w['last_member_no']
+            taken.add(same)
             w['members'].append((dcnic, name, relation, same))
             conn.execute(sa.text('UPDATE employee_dependents SET member_no = :n WHERE id = :d'), {'n': same, 'd': dep_id})
 
