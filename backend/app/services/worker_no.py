@@ -120,22 +120,39 @@ def _norm(text: str | None) -> str:
 
 
 def number_dependents(db: Session, emp: Employee) -> None:
-    """Give every family member of the employment a /NN suffix. The same person (same CNIC, or same name and relation)
-    keeps their suffix across all the worker's employments; anyone new gets the next free one."""
+    """Give every family member of the employment a /NN suffix. Each row of one employment gets its own suffix; a family
+    member already saved under another employer of the same worker (see _same_person) keeps theirs; anyone new gets
+    the next free one."""
     worker = emp.worker
     if worker is None:
         return
-    known = list(db.scalars(select(EmployeeDependent).join(Employee).where(Employee.worker_id == worker.id, EmployeeDependent.member_no.is_not(None))))
+    # two rows of the same employment are always two different people: each keeps its own suffix
+    taken: set[int] = set()
+    for d in sorted(emp.dependents, key=lambda x: x.id or 0):
+        if d.member_no in taken:
+            d.member_no = None  # repairs suffixes that were shared by mistake
+        elif d.member_no:
+            taken.add(d.member_no)
+    # family members saved under the worker's other employments (another employer)
+    elsewhere = [k for k in db.scalars(select(EmployeeDependent).join(Employee).where(
+        Employee.worker_id == worker.id, Employee.id != emp.id, EmployeeDependent.member_no.is_not(None)))]
     for d in emp.dependents:
         if d.member_no:
             continue
-        cnic = _norm(d.cnic)
-        same = next((k for k in known if k is not d and ((cnic and _norm(k.cnic) == cnic)
-                                                       or (_norm(k.name) == _norm(d.name) and _norm(k.relation) == _norm(d.relation)))), None)
+        same = next((k for k in elsewhere if k.member_no not in taken and _same_person(k, d)), None)
         if same:
             d.member_no = same.member_no
         else:
             worker.last_member_no = (worker.last_member_no or 0) + 1
             d.member_no = worker.last_member_no
-        known.append(d)
+        taken.add(d.member_no)
     db.flush()
+
+
+def _same_person(a: EmployeeDependent, b: EmployeeDependent) -> bool:
+    """Same family member: two of name, CNIC and relationship agree. A CNIC alone is not enough: a misread or
+    placeholder CNIC can appear on several rows (e.g. the wife's CNIC typed for a daughter too)."""
+    name = _norm(a.name) == _norm(b.name)
+    cnic = bool(_norm(a.cnic)) and _norm(a.cnic) == _norm(b.cnic)
+    relation = _norm(a.relation) == _norm(b.relation)
+    return (name and (cnic or relation)) or (cnic and relation)

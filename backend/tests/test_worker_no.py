@@ -45,6 +45,24 @@ def test_numbers_issued_in_order_and_kept(client, admin_headers):
         assert found['total'] == 1 and found['items'][0]['worker_no'] == first['worker_no'], q
 
 
+def test_shared_cnic_does_not_merge_family_members(client, admin_headers, db):
+    """Wife and daughter saved with the same (misread / placeholder) CNIC are still two people with two suffixes."""
+    _, h = register_and_approve(client, admin_headers)
+    same = '12345-1234567-0'
+    family = [{'name': 'Aeera Mansoor', 'relation': 'Spouse', 'cnic': same, 'source': 'FRC'},
+              {'name': 'Insha Mansoor', 'relation': 'Daughter', 'cnic': same, 'source': 'FRC'}, SON]
+    emp = client.post(f'{API}/employer/employees', json=WORKER | {'dependents': family}, headers=h).json()
+    assert [d['worker_no'][-3:] for d in emp['dependents']] == ['/01', '/02', '/03']
+
+    # rows saved before this fix with a shared suffix are repaired the next time the employee is saved
+    from app.models import EmployeeDependent
+    db.get(EmployeeDependent, emp['dependents'][1]['id']).member_no = 1
+    db.commit()
+    again = client.put(f'{API}/employer/employees/{emp["id"]}', json=WORKER | {'dependents': emp['dependents']}, headers=h).json()
+    suffixes = [d['worker_no'][-3:] for d in again['dependents']]
+    assert suffixes[0] == '/01' and suffixes[2] == '/03' and len(set(suffixes)) == 3
+
+
 def test_same_worker_keeps_number_with_new_employer(client, admin_headers):
     _, h1 = register_and_approve(client, admin_headers, n=1)
     _, h2 = register_and_approve(client, admin_headers, n=2, district='Hyderabad')
