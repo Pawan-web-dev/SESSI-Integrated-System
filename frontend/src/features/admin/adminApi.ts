@@ -92,6 +92,10 @@ export const adminApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/admin/partner-keys/${id}/revoke`, method: 'POST' }),
       invalidatesTags: ['PartnerKeys'],
     }),
+    deletePartnerKey: build.mutation<Message, number>({
+      query: (id) => ({ url: `/admin/partner-keys/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['PartnerKeys'],
+    }),
     checkEligibility: build.mutation<Eligibility, string>({
       // a mutation, not a query: every check is a fresh lookup and is written to the audit trail
       query: (number) => ({ url: `/admin/eligibility/${encodeURIComponent(number.trim())}` }),
@@ -104,5 +108,5 @@ export const {
   useAddDependentMutation, useUpdateDependentMutation, useDeleteDependentMutation,
   useAdminLoginMutation, useGetApplicationsQuery, useGetApplicationQuery, usePostProgressMutation, useApproveApplicationMutation,
   useRejectApplicationMutation, useGetChangeRequestsForReviewQuery, useDecideChangeRequestMutation,
-  useGetPartnerKeysQuery, useCreatePartnerKeyMutation, useRevokePartnerKeyMutation, useCheckEligibilityMutation,
+  useGetPartnerKeysQuery, useCreatePartnerKeyMutation, useRevokePartnerKeyMutation, useDeletePartnerKeyMutation, useCheckEligibilityMutation,
 } = adminApi;

@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/Alert';
 import { errorMessage } from '@/services/api/errors';
 import type { Eligibility, PartnerKeyCreated, PartnerKind } from '@/services/api/types';
 import { formatDate, formatDateTime } from '@/utils/format';
-import { useCheckEligibilityMutation, useCreatePartnerKeyMutation, useGetPartnerKeysQuery, useRevokePartnerKeyMutation } from '../adminApi';
+import { useCheckEligibilityMutation, useCreatePartnerKeyMutation, useDeletePartnerKeyMutation, useGetPartnerKeysQuery, useRevokePartnerKeyMutation } from '../adminApi';
 import { Avatar, Badge, BTN, BTN_GHOST, Empty, FilterSelect, Panel, TABLE, TD, TH } from '../components/ui';
 
 const INPUT = 'min-h-[42px] px-3 border border-solid border-essi-input rounded-lg text-[14px] bg-white box-border';
@@ -111,6 +111,7 @@ function PartnerKeys() {
   const { data = [], error, isLoading } = useGetPartnerKeysQuery();
   const [create, created] = useCreatePartnerKeyMutation();
   const [revoke, revoking] = useRevokePartnerKeyMutation();
+  const [remove, removing] = useDeletePartnerKeyMutation();
   const [name, setName] = useState('');
   const [kind, setKind] = useState<PartnerKind>('HMIS');
   const [fresh, setFresh] = useState<PartnerKeyCreated | null>(null);
@@ -153,7 +154,7 @@ function PartnerKeys() {
       ) : (
         <p className="mb-4 text-[13px]">Only an ESSI administrator can issue or revoke keys.</p>
       )}
-      <Alert kind="error" message={created.error ? errorMessage(created.error) : revoking.error ? errorMessage(revoking.error) : error ? errorMessage(error) : ''} />
+      <Alert kind="error" message={created.error ? errorMessage(created.error) : revoking.error ? errorMessage(revoking.error) : removing.error ? errorMessage(removing.error) : error ? errorMessage(error) : ''} />
       {fresh ? (
         <div className="mb-4 rounded-xl border border-solid border-[#f0c36d] bg-[#fff8e6] p-4">
           <div className="text-[14px] font-semibold mb-1">Key for {fresh.name}. Copy it now: it will not be shown again.</div>
@@ -202,6 +203,17 @@ function PartnerKeys() {
                       }}
                     >
                       Revoke
+                    </button>
+                  ) : null}
+                  {isAdmin && !k.active ? (
+                    <button
+                      className={BTN_GHOST + ' !border-[#b00020] !text-[#b00020]'}
+                      disabled={removing.isLoading}
+                      onClick={() => {
+                        if (window.confirm(`Permanently delete the key of ${k.name}? This cannot be undone. Its past lookups stay in the audit trail.`)) void remove(k.id);
+                      }}
+                    >
+                      Delete
                     </button>
                   ) : null}
                 </td>

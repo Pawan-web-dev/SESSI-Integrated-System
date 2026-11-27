@@ -56,6 +56,21 @@ def revoke_key(db: Session, admin: AdminUser, key_id: int) -> PartnerKey:
     return row
 
 
+def delete_key(db: Session, admin: AdminUser, key_id: int) -> str:
+    """Remove a revoked key for good (an active key must be revoked first). The audit trail keeps its history."""
+    _only_admins(admin)
+    row = db.get(PartnerKey, key_id)
+    if not row:
+        raise NotFound('Partner key not found.')
+    if row.active:
+        raise ServiceError('Revoke the key first, then delete it.')
+    name = row.name
+    audit(db, f'admin:{admin.username}', 'partner_key.deleted', 'partner_key', row.id, {'name': name, 'prefix': row.key_prefix})
+    db.delete(row)
+    db.commit()
+    return name
+
+
 def authenticate(db: Session, key: str | None) -> PartnerKey | None:
     """The active partner key matching `key`, or None."""
     key = (key or '').strip()

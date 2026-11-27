@@ -92,6 +92,13 @@ def revoke_partner_key(key_id: int, admin: CurrentAdmin, db: DB):
     return partner_keys.revoke_key(db, admin, key_id)
 
 
+@router.delete('/partner-keys/{key_id}', response_model=Message, tags=['Admin – partner access'])
+def delete_partner_key(key_id: int, admin: CurrentAdmin, db: DB):
+    """Permanently remove a revoked key. Its lookups stay in the audit trail."""
+    name = partner_keys.delete_key(db, admin, key_id)
+    return Message(message=f'The key of {name} was deleted.')
+
+
 @router.get('/eligibility/{number:path}', response_model=EligibilityOut, tags=['Admin – partner access'])
 def check_eligibility(number: str, admin: CurrentAdmin, db: DB):
     """The same answer a pharmacy or hospital gets, for officers (e.g. to help a partner over the phone)."""
