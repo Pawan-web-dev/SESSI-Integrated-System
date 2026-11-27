@@ -9,8 +9,9 @@ from app.models.change_request import PENDING_REVIEW
 from app.schemas.admin import AdminDashboardOut, AdminEmployerDetailOut, AdminEmployerOut, AdminWorkerDetailOut, AdminWorkerListOut
 from app.schemas.common import AdminLoginIn, AuditOut, Message, TokenOut
 from app.schemas.employer import ChangeRequestDecisionIn, ChangeRequestOut, DependentIn, DependentOut
+from app.schemas.partner import EligibilityOut, PartnerKeyCreatedOut, PartnerKeyIn, PartnerKeyOut
 from app.schemas.registration import ApplicationDetailOut, ApplicationListOut, ProgressIn, RejectIn
-from app.services import admin_overview, auth, change_requests, employees, registration
+from app.services import admin_overview, auth, change_requests, eligibility, employees, partner_keys, registration
 from app.services.files import file_path
 from app.services.notify import audit
 
@@ -71,6 +72,30 @@ def update_dependent(dependent_id: int, body: DependentIn, admin: CurrentAdmin, 
 def delete_dependent(dependent_id: int, admin: CurrentAdmin, db: DB):
     employees.delete_dependent(db, admin_overview.get_dependent(db, dependent_id), admin_actor(admin))
     return Message(message='Dependent removed.')
+
+
+# ---------------------------------------------------------------- partner systems (pharmacy, HMIS)
+@router.get('/partner-keys', response_model=list[PartnerKeyOut], tags=['Admin – partner access'])
+def list_partner_keys(admin: CurrentAdmin, db: DB):
+    return partner_keys.list_keys(db)
+
+
+@router.post('/partner-keys', response_model=PartnerKeyCreatedOut, status_code=http_status.HTTP_201_CREATED, tags=['Admin – partner access'])
+def create_partner_key(body: PartnerKeyIn, admin: CurrentAdmin, db: DB):
+    """A new key for a pharmacy or hospital system. The key is in this response only: it cannot be shown again."""
+    row, key = partner_keys.create_key(db, admin, body.name, body.kind)
+    return PartnerKeyCreatedOut(**PartnerKeyOut.model_validate(row).model_dump(), key=key)
+
+
+@router.post('/partner-keys/{key_id}/revoke', response_model=PartnerKeyOut, tags=['Admin – partner access'])
+def revoke_partner_key(key_id: int, admin: CurrentAdmin, db: DB):
+    return partner_keys.revoke_key(db, admin, key_id)
+
+
+@router.get('/eligibility/{number:path}', response_model=EligibilityOut, tags=['Admin – partner access'])
+def check_eligibility(number: str, admin: CurrentAdmin, db: DB):
+    """The same answer a pharmacy or hospital gets, for officers (e.g. to help a partner over the phone)."""
+    return eligibility.check(db, number, admin_actor(admin))
 
 
 # ---------------------------------------------------------------- registrations

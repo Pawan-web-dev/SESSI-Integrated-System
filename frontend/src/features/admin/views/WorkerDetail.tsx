@@ -6,7 +6,7 @@ import { DependentsEditor } from '@/features/dependents/DependentsEditor';
 import { draftsToInput, toDraft, type DependentDraft } from '@/features/dependents/dependentDraft';
 import { errorMessage } from '@/services/api/errors';
 import type { AdminWorkerDetail } from '@/services/api/types';
-import { formatAmount } from '@/utils/format';
+import { formatAmount, workerNoDigits } from '@/utils/format';
 import { useAddDependentMutation, useDeleteDependentMutation, useGetAdminWorkerQuery, useUpdateDependentMutation } from '../adminApi';
 import { employerOpened, workerOpened } from '../adminSlice';
 import { Avatar, BackButton, Badge, BTN, BTN_GHOST, LINK, Panel } from '../components/ui';
@@ -58,7 +58,11 @@ export function WorkerDetail({ id }: { id: number }) {
               </button>{' '}
               <span className="font-mono text-[12px]">({w.employer_ein})</span>
             </div>
-            {w.worker_no ? <div className="mt-1 font-mono text-[15px] font-semibold text-essi-green">Worker No. {w.worker_no}</div> : null}
+            {w.worker_no ? (
+              <div className="mt-1 font-mono text-[15px] font-semibold text-essi-green">
+                Worker No. {w.worker_no} <span className="text-[13px] font-normal text-ink-muted">· {workerNoDigits(w.worker_no)}</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -133,7 +137,7 @@ function DependentsManager({ worker, message, onMessage: setMessage }: { worker:
       <Alert kind="success" message={message} />
       <Alert kind="error" message={err} />
       <p className="mt-0 mb-3 text-[13px] text-ink-muted">Correct any value in the table, add a family member with “+ Add dependent”, or remove a row, then click Save changes.</p>
-      <DependentsEditor rows={rows} onChange={(r) => { setRows(r); setMessage(''); }} disabled={busy} emptyText="No dependents on record for this employee. Click “+ Add dependent” to add one." />
+      <DependentsEditor showBothNumbers rows={rows} onChange={(r) => { setRows(r); setMessage(''); }} disabled={busy} emptyText="No dependents on record for this employee. Click “+ Add dependent” to add one." />
     </Panel>
   );
 }

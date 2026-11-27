@@ -17,6 +17,7 @@ export const ICON = {
   back: 'M19 12H5M11 6l-6 6 6 6',
   chevron: 'M9 6l6 6-6 6',
   check: 'M5 12l5 5 9-10',
+  key: 'M8 15a4 4 0 100-8 4 4 0 000 8zM11 11h10M18 11v4M21 11v3',
 };
 
 export function Icon({ d, size = 18, className = '' }: { d: string; size?: number; className?: string }) {
@@ -80,6 +81,7 @@ const BADGE: Record<string, string> = {
   rejected: 'bg-[#fdecea] text-[#9b1c1c]',
   separated: 'bg-[#fdecea] text-[#9b1c1c]',
   closed: 'bg-[#f1f1f1] text-[#555]',
+  revoked: 'bg-[#fdecea] text-[#9b1c1c]',
 };
 
 export function Badge({ status }: { status: string }) {

@@ -2,6 +2,7 @@
 import React from 'react';
 import type { Any, ViewProps } from '@/types/view';
 import { DependentsList } from '@/features/dependents/DependentsList';
+import { workerNoDigits } from '@/utils/format';
 
 export function EmployeeProfilesSection({ v }: ViewProps) {
   return (
@@ -28,7 +29,7 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                 </span>
                 {v.pWno ? (<>
                   <div className="font-mono font-semibold text-[14px] text-essi-green mt-0.5">
-                    {"Worker No. "}{v.pWno}
+                    <span title={v.pWno}>{"Worker No. "}{workerNoDigits(v.pWno)}</span>
                   </div>
                 </>) : null}
               </div>
@@ -207,7 +208,7 @@ export function EmployeeProfilesSection({ v }: ViewProps) {
                     </div>
                   </td>
                   <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px] font-mono whitespace-nowrap">
-                    {e.wno}
+                    {e.wno !== '-' ? <span title={e.wno}>{workerNoDigits(e.wno)}</span> : '-'}
                   </td>
                   <td className="p-2.5 border border-solid border-[#e6e2c4] text-[13px]">
                     {e.cnic}

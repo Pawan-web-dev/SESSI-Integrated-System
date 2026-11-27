@@ -2,7 +2,7 @@
 import { baseApi } from '@/services/api/baseApi';
 import type {
   AdminDashboard, AdminEmployer, AdminEmployerDetail, AdminWorker, AdminWorkerDetail, ApplicationDetail, ApplicationList, ApplicationStatus,
-  ChangeRequest, Dependent, DependentInput, Message, TokenResponse,
+  ChangeRequest, Dependent, DependentInput, Eligibility, Message, PartnerKey, PartnerKeyCreated, PartnerKind, TokenResponse,
 } from '@/services/api/types';
 
 export interface WorkerQuery {
@@ -80,6 +80,22 @@ export const adminApi = baseApi.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/admin/change-requests/${id}/decision`, method: 'POST', body }),
       invalidatesTags: ['ChangeRequests', 'Profile', 'Notifications', 'Outbox'],
     }),
+    getPartnerKeys: build.query<PartnerKey[], void>({
+      query: () => '/admin/partner-keys',
+      providesTags: ['PartnerKeys'],
+    }),
+    createPartnerKey: build.mutation<PartnerKeyCreated, { name: string; kind: PartnerKind }>({
+      query: (body) => ({ url: '/admin/partner-keys', method: 'POST', body }),
+      invalidatesTags: ['PartnerKeys'],
+    }),
+    revokePartnerKey: build.mutation<PartnerKey, number>({
+      query: (id) => ({ url: `/admin/partner-keys/${id}/revoke`, method: 'POST' }),
+      invalidatesTags: ['PartnerKeys'],
+    }),
+    checkEligibility: build.mutation<Eligibility, string>({
+      // a mutation, not a query: every check is a fresh lookup and is written to the audit trail
+      query: (number) => ({ url: `/admin/eligibility/${encodeURIComponent(number.trim())}` }),
+    }),
   }),
 });
 
@@ -88,4 +104,5 @@ export const {
   useAddDependentMutation, useUpdateDependentMutation, useDeleteDependentMutation,
   useAdminLoginMutation, useGetApplicationsQuery, useGetApplicationQuery, usePostProgressMutation, useApproveApplicationMutation,
   useRejectApplicationMutation, useGetChangeRequestsForReviewQuery, useDecideChangeRequestMutation,
+  useGetPartnerKeysQuery, useCreatePartnerKeyMutation, useRevokePartnerKeyMutation, useCheckEligibilityMutation,
 } = adminApi;

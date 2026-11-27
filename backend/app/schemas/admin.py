@@ -45,6 +45,7 @@ class AdminDashboardOut(BaseModel):
 class AdminWorkerOut(BaseModel):
     id: int
     worker_no: str | None
+    worker_no_digits: str | None = None
     full_name: str
     father_name: str
     cnic: str

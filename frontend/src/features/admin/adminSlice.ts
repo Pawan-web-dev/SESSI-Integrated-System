@@ -6,7 +6,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { adminSignedOut } from '@/features/auth/authSlice';
 import type { ApplicationStatus, ChangeRequest } from '@/services/api/types';
 
-export type AdminSection = 'dashboard' | 'employers' | 'workers' | 'registrations' | 'changes';
+export type AdminSection = 'dashboard' | 'employers' | 'workers' | 'registrations' | 'changes' | 'partners';
 
 export interface AdminState {
   section: AdminSection;
