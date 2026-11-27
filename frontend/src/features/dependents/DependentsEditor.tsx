@@ -5,6 +5,7 @@
  */
 import { useState } from 'react';
 import { resizePhoto } from '@/features/dashboard/logic/photo';
+import { workerNoDigits } from '@/utils/format';
 import { emptyDraft, formatCnicInput, genderOf, RELATIONS, type DependentDraft } from './dependentDraft';
 
 const INPUT = 'w-full min-h-[38px] px-2 border border-solid rounded-md text-[13px] bg-white box-border';
@@ -87,11 +88,14 @@ export function DependentsEditor({
   onChange,
   disabled = false,
   emptyText = 'No dependents yet. Upload the FRC or click “+ Add dependent” to enter them by hand.',
+  showBothNumbers = false,
 }: {
   rows: DependentDraft[];
   onChange: (rows: DependentDraft[]) => void;
   disabled?: boolean;
   emptyText?: string;
+  /** admin: W-26-102-004573-6/01 and 26102004573601; the employer dashboard shows the digits only */
+  showBothNumbers?: boolean;
 }) {
   const [photoError, setPhotoError] = useState('');
 
@@ -176,7 +180,11 @@ export function DependentsEditor({
                   </td>
                   <td className={TD}>
                     <input aria-label={`Dependent ${i + 1} name`} className={cls(r, 'name')} value={r.name} disabled={disabled} placeholder="Full name" onChange={(e) => update(r.key, { name: e.target.value })} />
-                    {r.workerNo ? <div className="mt-1 text-[12px] font-mono text-essi-dark" title="Family-member number">{r.workerNo}</div> : null}
+                    {r.workerNo ? (
+                      <div className="mt-1 text-[12px] font-mono text-essi-dark" title={r.workerNo}>
+                        {showBothNumbers ? <>{r.workerNo} <span className="text-ink-muted">· {workerNoDigits(r.workerNo)}</span></> : workerNoDigits(r.workerNo)}
+                      </div>
+                    ) : null}
                   </td>
                   <td className={TD}>
                     <RelationPicker

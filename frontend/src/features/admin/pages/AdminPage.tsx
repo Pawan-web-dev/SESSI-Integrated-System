@@ -19,6 +19,7 @@ import { ReviewApplicationModal } from '../components/ReviewApplicationModal';
 import { Icon, ICON, Panel } from '../components/ui';
 import { DashboardView } from '../views/DashboardView';
 import { EmployersView } from '../views/EmployersView';
+import { PartnersView } from '../views/PartnersView';
 import { WorkersView } from '../views/WorkersView';
 
 const TABS: ApplicationStatus[] = ['pending', 'approved', 'rejected'];
@@ -29,6 +30,7 @@ const NAV: { key: AdminSection; label: string; icon: string; group: string; subt
   { key: 'workers', label: 'Employees & Dependents', icon: ICON.family, group: 'Records', subtitle: 'Find any worker and manage their family members' },
   { key: 'registrations', label: 'Registrations', icon: ICON.file, group: 'Review', subtitle: 'Approve new establishments and issue the EIN' },
   { key: 'changes', label: 'Change Requests', icon: ICON.swap, group: 'Review', subtitle: 'Requests to change registered details' },
+  { key: 'partners', label: 'Partner Access', icon: ICON.key, group: 'Hospitals & Pharmacies', subtitle: 'Eligibility check and API keys for pharmacy and hospital (HMIS) systems' },
 ];
 
 /** ESSI admin panel (#/admin): sign-in, then the workspace with a sidebar. */
@@ -150,6 +152,7 @@ function AdminWorkspace({ name }: { name: string }) {
           {section === 'workers' ? <WorkersView /> : null}
           {section === 'registrations' ? <RegistrationsSection /> : null}
           {section === 'changes' ? <ChangesSection /> : null}
+          {section === 'partners' ? <PartnersView /> : null}
         </main>
       </div>
     </div>

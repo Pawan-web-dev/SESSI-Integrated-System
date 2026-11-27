@@ -210,12 +210,16 @@ export interface Dependent extends DependentInput {
   id: number;
   /** the worker's number plus /01, /02 … */
   worker_no?: string | null;
+  /** the same number as digits only (26102004573601) */
+  worker_no_digits?: string | null;
 }
 export interface Employee extends Omit<EmployeeInput, 'dependents'> {
   id: number;
   status: 'Active' | 'Inactive' | 'Separated';
   /** permanent ESSI worker number W-YY-DDD-NNNNNN-C */
   worker_no: string | null;
+  /** the same number as digits only (261020045736) */
+  worker_no_digits?: string | null;
   dependents: Dependent[];
 }
 
@@ -260,6 +264,7 @@ export interface AdminEmployer {
 export interface AdminWorker {
   id: number;
   worker_no: string | null;
+  worker_no_digits?: string | null;
   full_name: string;
   father_name: string;
   cnic: string;
@@ -425,4 +430,42 @@ export interface OutboxItem {
   subject: string;
   body: string;
   created_at: string;
+}
+
+/* ---------- partner systems (pharmacy, hospital HMIS) ---------- */
+export type PartnerKind = 'Pharmacy' | 'HMIS' | 'Other';
+export interface PartnerKey {
+  id: number;
+  name: string;
+  kind: PartnerKind;
+  key_prefix: string;
+  active: boolean;
+  created_by: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+export interface PartnerKeyCreated extends PartnerKey {
+  /** shown only once */
+  key: string;
+}
+export interface Eligibility {
+  id: string;
+  id_digits: string;
+  person: 'worker' | 'family member';
+  name: string;
+  relation: string;
+  father_name: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
+  cnic_masked: string | null;
+  photo: string | null;
+  worker_no: string;
+  worker_no_digits: string;
+  worker_name: string;
+  eligible: boolean;
+  reason: string;
+  employers: { name: string; ein: string | null; since: string | null }[];
+  last_paid_month: string | null;
+  family: { id: string | null; id_digits: string | null; name: string; relation: string; date_of_birth: string | null }[];
 }

@@ -51,3 +51,27 @@ class AuditLog(TimestampMixin, Base):
     entity: Mapped[str] = mapped_column(String(40))
     entity_id: Mapped[str] = mapped_column(String(40), index=True)
     details: Mapped[dict | None] = mapped_column(JSON)
+
+
+PARTNER_KINDS = ('Pharmacy', 'HMIS', 'Other')
+
+
+class PartnerKey(TimestampMixin, Base):
+    """An API key for a partner system (pharmacy, hospital HMIS) that checks whether a worker or family member is covered.
+
+    Only a SHA-256 hash of the key is kept; the key itself is shown once, when it is created. Every lookup made with
+    the key is written to the audit trail (action eligibility.checked).
+    """
+
+    __tablename__ = 'partner_keys'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))  # e.g. "Civil Hospital Karachi – HMIS"
+    kind: Mapped[str] = mapped_column(String(20))  # Pharmacy | HMIS | Other
+    key_prefix: Mapped[str] = mapped_column(String(16))  # first characters, so officers can tell keys apart
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[str] = mapped_column(String(80))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_by: Mapped[str | None] = mapped_column(String(80))

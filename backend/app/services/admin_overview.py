@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models import Challan, ChangeRequest, Contribution, Employee, EmployeeDependent, Employer, RegistrationApplication, Worker
 from app.models.change_request import PENDING_REVIEW
 from app.services.errors import NotFound
+from app.services.worker_no import format_worker_no, parse_any
 
 
 def _month_start(d: date, back: int = 0) -> date:
@@ -118,7 +119,7 @@ def employer_detail(db: Session, employer_id: int) -> dict:
 
 def _worker_row(emp: Employee, employer: Employer, dependents: int) -> dict:
     return {
-        'id': emp.id, 'worker_no': emp.worker_no, 'full_name': emp.full_name, 'father_name': emp.father_name, 'cnic': emp.cnic, 'gender': emp.gender, 'mobile': emp.mobile,
+        'id': emp.id, 'worker_no': emp.worker_no, 'worker_no_digits': emp.worker_no_digits, 'full_name': emp.full_name, 'father_name': emp.father_name, 'cnic': emp.cnic, 'gender': emp.gender, 'mobile': emp.mobile,
         'designation': emp.designation, 'employment_type': emp.employment_type, 'status': emp.status, 'photo': emp.photo,
         'employer_id': employer.id, 'employer_name': employer.name, 'employer_ein': employer.ein, 'dependents': dependents,
     }
@@ -135,6 +136,9 @@ def list_workers(db: Session, q: str = '', employer_id: int | None = None, statu
         digits = ''.join(ch for ch in q.split('/')[0] if ch.isdigit())  # a family member's /01 is not part of the search
         conds = [Employee.full_name.ilike(like), Employee.father_name.ilike(like), Employee.cnic.ilike(like), Employer.name.ilike(like),
                  Worker.worker_no.ilike(f'%{q.strip().split("/")[0]}%')]
+        exact = parse_any(q)
+        if exact:  # a full worker number in either form (W-26-102-004573-6, 261020045736, … /02, …02)
+            conds.append(Worker.worker_no == format_worker_no(exact[0]))
         if len(digits) >= 4:
             conds.append(func.replace(Employee.cnic, '-', '').like(f'%{digits}%'))
             conds.append(func.replace(Worker.worker_no, '-', '').like(f'%{digits}%'))

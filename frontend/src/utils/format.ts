@@ -75,3 +75,8 @@ export function formatFileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
   return Math.max(1, Math.round(bytes / 1024)) + ' KB';
 }
+
+/** The worker number as digits only, for typing at a counter: W-26-102-004573-6 -> 261020045736, …/02 -> 26102004573602. */
+export function workerNoDigits(workerNo: string | null | undefined): string {
+  return (workerNo || '').replace(/\D/g, '');
+}

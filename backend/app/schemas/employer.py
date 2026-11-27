@@ -66,6 +66,7 @@ class DependentOut(DependentIn):
 
     id: int
     worker_no: str | None = Field(default=None, description="The worker's number plus /01, /02 …", examples=['W-26-102-004573-6/01'])
+    worker_no_digits: str | None = Field(default=None, description='The same number as digits only', examples=['26102004573601'])
 
 
 class EmployeeIn(BaseModel):
@@ -93,6 +94,7 @@ class EmployeeOut(EmployeeIn):
     id: int
     status: str
     worker_no: str | None = Field(default=None, description='Permanent ESSI worker number W-YY-DDD-NNNNNN-C', examples=['W-26-102-004573-6'])
+    worker_no_digits: str | None = Field(default=None, description='The same number as digits only', examples=['261020045736'])
     dependents: list[DependentOut] = []
 
 

@@ -5,7 +5,7 @@ from app.models.files import StoredFile
 from app.models.employer import EinRegistry, EinSequence, Employer, EmployerUser, OneTimeCode
 from app.models.master import Directorate, DirectorateDistrict, IndustryClassification
 from app.models.registration import ApplicationDocument, ApplicationEvent, RegistrationApplication
-from app.models.system import AdminUser, AuditLog, OutboxMessage
+from app.models.system import AdminUser, AuditLog, OutboxMessage, PartnerKey
 from app.models.workforce import Employee, EmployeeDependent, Worker, WorkerSequence
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     'IndustryClassification',
     'OneTimeCode',
     'OutboxMessage',
+    'PartnerKey',
     'RegistrationApplication',
     'StoredFile',
     'Worker',

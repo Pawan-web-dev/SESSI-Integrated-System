@@ -9,6 +9,11 @@
 
     Family members: the worker's number plus /01, /02 … (W-26-102-004573-6/01).
 
+    The same number can also be written as digits only, for typing at a counter or a keypad:
+        W-26-102-004573-6     ->  261020045736     (12 digits)
+        W-26-102-004573-6/02  ->  26102004573602   (14 digits: the last two are the family member)
+    Both forms are accepted everywhere (see parse_any); a CNIC has 13 digits, so the three never get mixed up.
+
 Rules:
   * one number per person for life: the worker is found by CNIC, so changing employer keeps the number;
   * issued once, never changed and never re-issued (the serial comes from worker_sequences under a row lock);
@@ -23,9 +28,6 @@ from sqlalchemy.orm import Session
 
 from app.models import Employee, EmployeeDependent, Employer, Worker, WorkerSequence
 from app.services.errors import ServiceError
-
-WORKER_NO_PATTERN = re.compile(r'^W-(\d{2})-(\d{3})-(\d{6})-(\d)$')
-
 
 def luhn_digit(digits: str) -> int:
     """The Luhn check digit for `digits`: double every second digit from the right, add everything up, round up to 10."""
@@ -52,20 +54,49 @@ def format_worker_no(p: WorkerNoParts) -> str:
     return f'W-{p.year:02d}-{p.directorate}-{p.serial:06d}-{luhn_digit(body)}'
 
 
-def parse_worker_no(value: str | None) -> WorkerNoParts | None:
-    """The parts of a well-formed worker number whose check digit is right; None for anything else (e.g. a typo)."""
-    raw = (value or '').strip().upper().split('/')[0]
-    m = WORKER_NO_PATTERN.match(raw)
-    if not m:
+def parse_any(value: str | None) -> tuple[WorkerNoParts, int | None] | None:
+    """(worker number, family member or None) from any way of writing it:
+    W-26-102-004573-6, w 26 102 004573 6, 261020045736 (worker) and
+    W-26-102-004573-6/02, W-26-102-004573-6-02, 26102004573602 (family member 2).
+    None when it is not a worker number or the check digit is wrong."""
+    raw = (value or '').strip().upper()
+    if raw.startswith('W'):
+        raw = raw[1:]
+    member: int | None = None
+    if '/' in raw:
+        raw, suffix = raw.split('/', 1)
+        if not suffix.strip().isdigit():
+            return None
+        member = int(suffix)
+    if re.search(r'[^0-9\s-]', raw):
         return None
-    year, directorate, serial, check = m.groups()
+    digits = re.sub(r'[\s-]', '', raw)
+    if len(digits) == 14 and member is None:
+        digits, member = digits[:12], int(digits[12:])
+    if len(digits) != 12 or member == 0:
+        return None
+    year, directorate, serial, check = digits[:2], digits[2:5], digits[5:11], digits[11]
     if luhn_digit(year + directorate + serial) != int(check):
         return None
-    return WorkerNoParts(int(year), directorate, int(serial))
+    return WorkerNoParts(int(year), directorate, int(serial)), member
 
 
 def is_valid_worker_no(value: str | None) -> bool:
-    return parse_worker_no(value) is not None
+    return parse_any(value) is not None
+
+
+def to_digits(worker_no: str | None) -> str | None:
+    """W-26-102-004573-6 -> 261020045736 and W-26-102-004573-6/02 -> 26102004573602."""
+    found = parse_any(worker_no)
+    if not found:
+        return None
+    parts, member = found
+    body = format_worker_no(parts)[2:].replace('-', '')
+    return body + (f'{member:02d}' if member else '')
+
+
+def member_worker_no(worker_no: str, member_no: int) -> str:
+    return f'{worker_no}/{member_no:02d}'
 
 
 def _next_serial(db: Session, directorate: str, year: int) -> int:

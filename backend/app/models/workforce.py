@@ -80,6 +80,11 @@ class Employee(TimestampMixin, Base):
     def worker_no(self) -> str | None:
         return self.worker.worker_no if self.worker else None
 
+    @property
+    def worker_no_digits(self) -> str | None:
+        """The same number as digits only: W-26-102-004573-6 -> 261020045736."""
+        return _digits(self.worker_no)
+
 
 DEPENDENT_SOURCES = ('FRC', 'Manual', 'NADRA')
 
@@ -110,3 +115,12 @@ class EmployeeDependent(TimestampMixin, Base):
         """The family member's number: the worker's number plus /01, /02 …"""
         base = self.employee.worker_no if self.employee else None
         return f'{base}/{self.member_no:02d}' if base and self.member_no else None
+
+    @property
+    def worker_no_digits(self) -> str | None:
+        """Digits only: W-26-102-004573-6/02 -> 26102004573602."""
+        return _digits(self.worker_no)
+
+
+def _digits(worker_no: str | None) -> str | None:
+    return ''.join(ch for ch in worker_no if ch.isdigit()) if worker_no else None

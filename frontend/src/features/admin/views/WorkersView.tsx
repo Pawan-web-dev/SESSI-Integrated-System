@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Alert } from '@/components/ui/Alert';
 import { errorMessage } from '@/services/api/errors';
 import type { AdminWorker } from '@/services/api/types';
+import { workerNoDigits } from '@/utils/format';
 import { useGetAdminWorkersQuery } from '../adminApi';
 import { employerOpened, workerOpened } from '../adminSlice';
 import { Avatar, Badge, BTN_GHOST, Empty, FilterSelect, LINK, Panel, SearchBox, TABLE, TD, TH } from '../components/ui';
@@ -40,7 +41,10 @@ export function WorkersTable({ rows, showEmployer = true, onOpen }: { rows: Admi
                   </div>
                 </div>
               </td>
-              <td className={TD + ' whitespace-nowrap font-mono text-[13px] font-semibold text-essi-dark'}>{w.worker_no || '—'}</td>
+              <td className={TD + ' whitespace-nowrap font-mono text-[13px] font-semibold text-essi-dark'}>
+                {w.worker_no || '—'}
+                {w.worker_no ? <div className="text-[12px] font-normal text-ink-muted">{workerNoDigits(w.worker_no)}</div> : null}
+              </td>
               <td className={TD + ' whitespace-nowrap font-mono text-[13px]'}>{w.cnic}</td>
               {showEmployer ? (
                 <td className={TD}>

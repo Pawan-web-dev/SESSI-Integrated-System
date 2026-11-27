@@ -2,17 +2,19 @@
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_token
 from app.db.session import get_db
-from app.models import AdminUser, Employer, EmployerUser
+from app.models import AdminUser, Employer, EmployerUser, PartnerKey
 from app.models.employer import APPROVED
+from app.services import partner_keys
 
 DB = Annotated[Session, Depends(get_db)]
 bearer = HTTPBearer(auto_error=False)
+api_key = APIKeyHeader(name='X-API-Key', auto_error=False, description='Partner key issued by ESSI (Admin panel → Partner access)')
 
 
 def _payload(credentials: HTTPAuthorizationCredentials | None, kind: str) -> dict:
@@ -48,8 +50,16 @@ def current_admin(db: DB, credentials: Annotated[HTTPAuthorizationCredentials | 
     return admin
 
 
+def current_partner(db: DB, key: Annotated[str | None, Security(api_key)]) -> PartnerKey:
+    partner = partner_keys.authenticate(db, key)
+    if not partner:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'A valid partner key is needed in the X-API-Key header.')
+    return partner
+
+
 CurrentEmployer = Annotated[EmployerSession, Depends(current_employer)]
 CurrentAdmin = Annotated[AdminUser, Depends(current_admin)]
+CurrentPartner = Annotated[PartnerKey, Depends(current_partner)]
 
 
 def admin_actor(admin: AdminUser) -> str:
