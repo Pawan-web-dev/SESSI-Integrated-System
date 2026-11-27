@@ -84,8 +84,16 @@ def test_partner_keys(client, admin_headers, db):
 
     pk = {'X-API-Key': created['key']}
     assert client.get(f'{API}/eligibility/261020045736', headers=pk).status_code in (400, 404)  # accepted, just unknown
-    assert client.post(f'{API}/admin/partner-keys/{created["id"]}/revoke', headers=admin_headers).json()['active'] is False
+    one = f'{API}/admin/partner-keys/{created["id"]}'
+    assert client.delete(one, headers=admin_headers).status_code == 400  # an active key must be revoked first
+    assert client.post(f'{one}/revoke', headers=admin_headers).json()['active'] is False
     assert client.get(f'{API}/eligibility/261020045736', headers=pk).status_code == 401
+
+    # a revoked key can be deleted for good; its history stays in the audit trail
+    assert client.delete(one, headers=admin_headers).status_code == 200
+    assert client.get(f'{API}/admin/partner-keys', headers=admin_headers).json() == []
+    assert client.delete(one, headers=admin_headers).status_code == 404
+    assert db.query(AuditLog).filter(AuditLog.action == 'partner_key.deleted').count() == 1
 
     # an officer (not an administrator) can look up but not hand out keys
     db.add(AdminUser(username='officer1', full_name='Officer', password_hash=hash_password('Officer@2026'), role='officer'))
