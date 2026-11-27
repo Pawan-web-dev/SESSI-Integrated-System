@@ -1,11 +1,11 @@
 /** Admin: workers of every establishment (search by name / CNIC / worker number / establishment) with their number of dependents. */
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import { Alert } from '@/components/ui/Alert';
 import { errorMessage } from '@/services/api/errors';
 import type { AdminWorker } from '@/services/api/types';
 import { workerNoDigits } from '@/utils/format';
-import { useGetAdminWorkersQuery } from '../adminApi';
+import { useGetAdminEmployersQuery, useGetAdminWorkersQuery } from '../adminApi';
 import { employerOpened, workerOpened } from '../adminSlice';
 import { Avatar, Badge, BTN_GHOST, Empty, FilterSelect, LINK, Panel, SearchBox, TABLE, TD, TH } from '../components/ui';
 import { WorkerDetail } from './WorkerDetail';
@@ -91,9 +91,15 @@ function WorkerList() {
   const dispatch = useAppDispatch();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [employerId, setEmployerId] = useState('');
   const [page, setPage] = useState(0);
   const query = useDeferredValue(q);
-  const { data, error, isFetching } = useGetAdminWorkersQuery({ q: query, status, offset: page * PAGE, limit: PAGE });
+  const { data, error, isFetching } = useGetAdminWorkersQuery({ q: query, status, employer_id: employerId ? Number(employerId) : undefined, offset: page * PAGE, limit: PAGE });
+  const { data: employers } = useGetAdminEmployersQuery({ status: 'approved' });
+  const companyOptions = useMemo<[string, string][]>(
+    () => [['', 'All companies'], ...[...(employers ?? [])].sort((a, b) => a.name.localeCompare(b.name)).map((e): [string, string] => [String(e.id), e.ein ? `${e.name} (${e.ein})` : e.name])],
+    [employers],
+  );
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
 
@@ -101,8 +107,14 @@ function WorkerList() {
     <Panel>
       <div className="flex flex-wrap gap-3 mb-4">
         <SearchBox value={q} onChange={(v) => { setQ(v); setPage(0); }} placeholder="Search by name, father’s name, CNIC, worker no. or establishment" />
+        <FilterSelect label="Company" value={employerId} onChange={(v) => { setEmployerId(v); setPage(0); }} options={companyOptions} />
         <FilterSelect label="Status" value={status} onChange={(v) => { setStatus(v); setPage(0); }} options={[['', 'All statuses'], ['Active', 'Active'], ['Inactive', 'Inactive'], ['Separated', 'Separated']]} />
         <span className="self-center text-[13px] text-ink-muted">{isFetching ? 'Loading…' : `${total} employee(s)`}</span>
+        {employerId || status || q ? (
+          <button className={BTN_GHOST} onClick={() => { setQ(''); setStatus(''); setEmployerId(''); setPage(0); }}>
+            Clear filters
+          </button>
+        ) : null}
       </div>
       <Alert kind="error" message={error ? errorMessage(error) : ''} />
       <WorkersTable rows={data?.items ?? []} onOpen={(id) => dispatch(workerOpened(id))} />
